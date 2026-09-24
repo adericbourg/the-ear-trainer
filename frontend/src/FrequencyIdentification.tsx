@@ -11,6 +11,7 @@ import {
   HALF_SPAN,
   INITIAL_CENTER,
   isHit,
+  nudge,
   PAGE_STEP,
   randomTarget,
   toFrequency,
@@ -79,10 +80,10 @@ export default function FrequencyIdentification() {
   const onSelectorKeyDown = (event: KeyboardEvent) => {
     if (isChecked) return
     const moves: Record<string, number> = {
-      ArrowLeft: center / ARROW_STEP,
-      ArrowDown: center / ARROW_STEP,
-      ArrowRight: center * ARROW_STEP,
-      ArrowUp: center * ARROW_STEP,
+      ArrowLeft: nudge(center, 1 / ARROW_STEP),
+      ArrowDown: nudge(center, 1 / ARROW_STEP),
+      ArrowRight: nudge(center, ARROW_STEP),
+      ArrowUp: nudge(center, ARROW_STEP),
       PageDown: center / PAGE_STEP,
       PageUp: center * PAGE_STEP,
       Home: CENTER_MIN,

@@ -5,7 +5,7 @@ import { startTone, stopTone } from './tone'
 
 vi.mock('./tone', () => ({ startTone: vi.fn(), stopTone: vi.fn() }))
 
-// Math.random() = 0.5 draws 1220 Hz, inside the initial selector (1030-1460 Hz); 0 draws 100 Hz, outside.
+// Math.random() = 0.5 draws 1200 Hz, inside the initial selector (1000-1500 Hz); 0 draws 100 Hz, outside.
 function renderExercise(random = 0.5) {
   vi.spyOn(Math, 'random').mockReturnValue(random)
   render(<FrequencyIdentification />)
@@ -37,7 +37,7 @@ describe('FrequencyIdentification', () => {
     fireEvent.click(play())
 
     // Then the target plays and Check is enabled
-    expect(startTone).toHaveBeenCalledWith(1220)
+    expect(startTone).toHaveBeenCalledWith(1200)
     expect(play()).toHaveAccessibleName('Pause')
     expect(check()).toBeEnabled()
 
@@ -82,25 +82,25 @@ describe('FrequencyIdentification', () => {
   it('selector_movesWithKeyboard', () => {
     // Given the selector at its initial position
     const { selector } = renderExercise()
-    expect(selector).toHaveAttribute('aria-valuetext', '1030 Hz to 1460 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
 
     // When pressing PageUp, then Right arrow
     fireEvent.keyDown(selector, { key: 'PageUp' })
-    expect(selector).toHaveAttribute('aria-valuetext', '2060 Hz to 2910 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '2100 Hz to 2900 Hz')
     fireEvent.keyDown(selector, { key: 'ArrowRight' })
-    expect(selector).toHaveAttribute('aria-valuetext', '2120 Hz to 3000 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '2100 Hz to 3000 Hz')
 
     // When pressing Home, then End
     fireEvent.keyDown(selector, { key: 'Home' })
     expect(selector).toHaveAttribute('aria-valuetext', '100 Hz to 140 Hz')
     fireEvent.keyDown(selector, { key: 'End' })
-    expect(selector).toHaveAttribute('aria-valuetext', '10610 Hz to 15000 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '11000 Hz to 15000 Hz')
 
     // When pressing PageDown then Left arrow
     fireEvent.keyDown(selector, { key: 'PageDown' })
     expect(selector).toHaveAttribute('aria-valuetext', '5300 Hz to 7500 Hz')
     fireEvent.keyDown(selector, { key: 'ArrowLeft' })
-    expect(selector).toHaveAttribute('aria-valuetext', '5150 Hz to 7290 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '5200 Hz to 7300 Hz')
   })
 
   it('check_whenHit_locksSelectorAndShowsSuccess', () => {
@@ -115,13 +115,13 @@ describe('FrequencyIdentification', () => {
     const next = screen.getByRole('button', { name: 'Next' })
     expect(next).toHaveFocus()
     expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument()
-    expect(screen.getByText('You guessed right! The actual frequency was 1220Hz.')).toBeInTheDocument()
+    expect(screen.getByText('You guessed right! The actual frequency was 1200Hz.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(selector).toHaveAttribute('aria-disabled', 'true')
 
     // And the selector is locked
     fireEvent.keyDown(selector, { key: 'PageUp' })
-    expect(selector).toHaveAttribute('aria-valuetext', '1030 Hz to 1460 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
 
     // And playback is still available
     fireEvent.click(play())
@@ -162,12 +162,12 @@ describe('FrequencyIdentification', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Missed!/)).not.toBeInTheDocument()
     expect(screen.queryByTestId('target-marker')).not.toBeInTheDocument()
-    expect(selector).toHaveAttribute('aria-valuetext', '1030 Hz to 1460 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
     expect(selector).not.toHaveAttribute('aria-disabled', 'true')
     expect(selector).toHaveFocus()
 
     // And the new target is played next
     fireEvent.click(play())
-    expect(startTone).toHaveBeenLastCalledWith(1220)
+    expect(startTone).toHaveBeenLastCalledWith(1200)
   })
 })

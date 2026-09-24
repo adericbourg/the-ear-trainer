@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  ARROW_STEP,
   bounds,
   CENTER_MAX,
   CENTER_MIN,
@@ -7,6 +8,7 @@ import {
   F_MAX,
   F_MIN,
   isHit,
+  nudge,
   randomTarget,
   toFrequency,
   toPosition,
@@ -17,7 +19,7 @@ describe('frequency', () => {
     vi.restoreAllMocks()
   })
 
-  it('randomTarget_isAMultipleOf10WithinRange', () => {
+  it('randomTarget_isRoundedTo2DigitsWithinRange', () => {
     for (const random of [0, 0.5, 0.999999]) {
       // Given a mocked random value
       vi.spyOn(Math, 'random').mockReturnValue(random)
@@ -25,13 +27,13 @@ describe('frequency', () => {
       // When drawing a target
       const target = randomTarget()
 
-      // Then it is a multiple of 10 within [F_MIN, F_MAX]
-      expect(target % 10).toBe(0)
+      // Then it has 2 significant digits within [F_MIN, F_MAX]
+      expect(Number(target.toPrecision(2))).toBe(target)
       expect(target).toBeGreaterThanOrEqual(F_MIN)
       expect(target).toBeLessThanOrEqual(F_MAX)
     }
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
-    expect(randomTarget()).toBe(1220)
+    expect(randomTarget()).toBe(1200)
   })
 
   it('toPosition_mapsLogarithmicallyAndRoundTrips', () => {
@@ -60,7 +62,25 @@ describe('frequency', () => {
     expect(clampCenter(100000)).toBe(CENTER_MAX)
     expect(clampCenter(1000)).toBe(1000)
     expect(bounds(CENTER_MIN)).toEqual({ low: F_MIN, high: 140 })
-    expect(bounds(CENTER_MAX)).toEqual({ low: 10610, high: F_MAX })
+    expect(bounds(CENTER_MAX)).toEqual({ low: 11000, high: F_MAX })
+  })
+
+  it('nudge_alwaysChangesDisplayedBounds', () => {
+    for (const [start, factor, end] of [
+      [CENTER_MIN, ARROW_STEP, CENTER_MAX],
+      [CENTER_MAX, 1 / ARROW_STEP, CENTER_MIN],
+    ] as const) {
+      // Given the selector at one end of the range
+      let center = start
+      while (center !== end) {
+        // When nudging it toward the other end
+        const next = nudge(center, factor)
+
+        // Then each nudge changes a displayed bound, unless it stops at the end of the range
+        if (next !== end) expect(bounds(next)).not.toEqual(bounds(center))
+        center = next
+      }
+    }
   })
 
   it('isHit_ofTargetOnADisplayedBound_isTrue', () => {
