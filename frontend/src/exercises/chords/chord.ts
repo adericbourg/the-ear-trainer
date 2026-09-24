@@ -50,10 +50,10 @@ export const triadsOf = (level: Level) => TRIADS.filter((t) => chordsOf(level).s
 export const extensionsOf = (level: Level) => EXTENSIONS.filter((e) => chordsOf(level).some((c) => c.extension === e))
 
 // Their inversions are ambiguous: an inverted augmented triad is another augmented triad, an inverted sus4 a sus2.
-const isRootPositionOnly = (triad: Triad) => triad === 'augmented' || triad === 'sus2' || triad === 'sus4'
+const isRootPositionOnly = (triad: Triad | undefined) => triad === 'augmented' || triad === 'sus2' || triad === 'sus4'
 
 // The 3rd inversion puts the 7th in the bass; the 9th is never in the bass.
-export const inversionCountOf = (triad: Triad, extension: Extension) =>
+export const inversionCountOf = (triad: Triad | undefined, extension: Extension) =>
   isRootPositionOnly(triad) ? 1 : extension === '7' || extension === 'maj7' ? 4 : 3
 
 const bySemitones = (a: Tone, b: Tone) => a.semitones - b.semitones

@@ -35,8 +35,10 @@ describe('Chords', () => {
     // When clicking Play
     fireEvent.click(play())
 
-    // Then the chord plays one note at a time, bass first, and Check is enabled
+    // Then the chord plays one note at a time, bass first, and Check is enabled once a triad is picked
     expect(playInterval).toHaveBeenCalledWith([66, 69, 73].map(toFrequency), false)
+    expect(check()).toBeDisabled()
+    fireEvent.click(screen.getByRole('radio', { name: 'major' }))
     expect(check()).toBeEnabled()
 
     // And Space replays from a radio, but not from a button
@@ -54,7 +56,7 @@ describe('Chords', () => {
     expect(screen.getAllByRole('radio', { name: /^(major|minor)$/ })).toHaveLength(2)
     expect(screen.queryByRole('group', { name: 'Extension' })).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Inversion' })).not.toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'major' })).toBeChecked()
+    expect(screen.getAllByRole('radio', { checked: true })).toEqual([screen.getByRole('radio', { name: 'Beginner' })])
 
     // When answering minor and pressing Enter
     const minor = screen.getByRole('radio', { name: 'minor' })
@@ -73,6 +75,7 @@ describe('Chords', () => {
     // Given a checked miss
     const { play, check } = renderExercise()
     fireEvent.click(play())
+    fireEvent.click(screen.getByRole('radio', { name: 'major' }))
     fireEvent.click(check())
     expect(screen.getByText(/Wrong triad\. It was a minor\./)).toBeInTheDocument()
 
@@ -85,6 +88,7 @@ describe('Chords', () => {
     expect(screen.queryByText(/Wrong triad/)).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'major' })).toHaveFocus()
     expect(screen.getByRole('radio', { name: 'major' })).toBeEnabled()
+    expect(screen.getByRole('radio', { name: 'major' })).not.toBeChecked()
   })
 
   it('expert_asksExtensionAndInversion', () => {

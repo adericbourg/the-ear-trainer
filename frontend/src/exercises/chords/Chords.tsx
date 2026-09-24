@@ -18,7 +18,7 @@ type ChoicesProps<T extends string | number> = {
   legend: string
   name: string
   options: readonly { value: T; label: string; isDisabled?: boolean }[]
-  value: T
+  value: T | undefined
   onChange: (value: T) => void
   isDisabled?: boolean
   ref?: Ref<HTMLFieldSetElement>
@@ -49,7 +49,7 @@ function Choices<T extends string | number>({ legend, name, options, value, onCh
 export default function Chords() {
   const [level, setLevel] = useState<Level>('beginner')
   const [question, setQuestion] = useState(() => randomQuestion('beginner'))
-  const [triad, setTriad] = useState<Triad>('major')
+  const [triad, setTriad] = useState<Triad>()
   const [extension, setExtension] = useState<Extension>('none')
   const [inversion, setInversion] = useState(0)
   const [hasPlayed, setHasPlayed] = useState(false)
@@ -74,7 +74,7 @@ export default function Chords() {
     stopInterval()
     setLevel(newLevel)
     setQuestion(randomQuestion(newLevel))
-    setTriad('major')
+    setTriad(undefined)
     setExtension('none')
     setInversion(0)
     setHasPlayed(false)
@@ -83,11 +83,11 @@ export default function Chords() {
 
   const next = () => {
     flushSync(() => reset(level))
-    triadsRef.current?.querySelector<HTMLInputElement>('input:checked')?.focus()
+    triadsRef.current?.querySelector('input')?.focus()
   }
 
   // Falls back to root position when the picked inversion doesn't exist for the new chord.
-  const changeChord = (newTriad: Triad, newExtension: Extension) => {
+  const changeChord = (newTriad: Triad | undefined, newExtension: Extension) => {
     setTriad(newTriad)
     setExtension(newExtension)
     setInversion((current) => (current < inversionCountOf(newTriad, newExtension) ? current : 0))
@@ -108,11 +108,13 @@ export default function Chords() {
 
   useEffect(() => stopInterval, [])
 
+  const isCheckable = hasPlayed && triad !== undefined
+
   const onAnswerKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Enter' && hasPlayed && !isChecked) check()
+    if (event.key === 'Enter' && isCheckable && !isChecked) check()
   }
 
-  const result = isChecked ? feedback(level, question, { triad, extension, inversion }) : undefined
+  const result = isChecked && triad ? feedback(level, question, { triad, extension, inversion }) : undefined
 
   return (
     <div className={shared.exercise}>
@@ -178,7 +180,7 @@ export default function Chords() {
             Next
           </button>
         ) : (
-          <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>
+          <button type="button" className={shared.button} disabled={!isCheckable} onClick={check}>
             Check
           </button>
         )}
