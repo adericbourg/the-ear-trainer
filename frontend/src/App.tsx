@@ -1,6 +1,12 @@
+import type { ReactNode } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
+import FrequencyIdentification from './FrequencyIdentification'
 import MenuBar from './MenuBar'
-import { categories, exercises } from './exercises'
+import { categories, ExerciseId, exercises } from './exercises'
+
+const exercisePages = new Map<ExerciseId, () => ReactNode>([
+  [ExerciseId('frequency-identification'), () => <FrequencyIdentification />],
+])
 
 function Home() {
   return <h1>Welcome</h1>
@@ -10,7 +16,12 @@ function ExercisePage() {
   const { categoryId, exerciseId } = useParams()
   const exercise = exercises.find((e) => e.categoryId === categoryId && e.id === exerciseId)
   if (!exercise) return <Navigate to="/" replace />
-  return <h1>{exercise.name}</h1>
+  return (
+    <>
+      <h1>{exercise.name}</h1>
+      {exercisePages.get(exercise.id)?.()}
+    </>
+  )
 }
 
 function App() {

@@ -6,6 +6,11 @@
   --accent: #f5b841;
   --content-bg: #ffffff;
   --content-fg: #1b1f2a;
+  --disabled-fg: #6b7280;
+  --hit-bg: #c6f0cd;
+  --hit-border: #1e7b34;
+  --miss-bg: #fbd0cd;
+  --miss-border: #b3261e;
   font-family: system-ui, sans-serif;
 }
 
