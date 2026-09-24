@@ -18,7 +18,7 @@ import {
   toPosition,
 } from './frequency'
 import styles from './FrequencyIdentification.module.css'
-import { startTone, stopTone } from './tone'
+import { startTone, stopTone } from '../../tone'
 
 const percent = (position: number) => `${position * 100}%`
 

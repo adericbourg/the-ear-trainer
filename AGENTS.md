@@ -31,6 +31,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 ## Registering an exercise
 1. Add its category to `categories` in `frontend/src/exercises.ts` if it doesn't exist (`{ id: CategoryId('...'), name }`).
 2. Add `{ id: ExerciseId('...'), name, categoryId: CategoryId('...') }` to `exercises`.
-3. Map its id to its page component in `exercisePages` (`frontend/src/App.tsx`); the page renders below the exercise name heading.
-4. Categories show up in the menu only when they have at least one exercise.
-5. Ids are used in the URL (`/<categoryId>/<exerciseId>`): use kebab-case.
+3. Put its component, test, styles and any exercise-specific logic in `frontend/src/exercises/<exercise-id>/` (kebab-case, matching its `ExerciseId`).
+4. Map its id to its page component in `exercisePages` (`frontend/src/App.tsx`); the page renders below the exercise name heading.
+5. Categories show up in the menu only when they have at least one exercise.
+6. Ids are used in the URL (`/<categoryId>/<exerciseId>`): use kebab-case.

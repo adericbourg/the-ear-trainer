@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
-import FrequencyIdentification from './FrequencyIdentification'
+import FrequencyIdentification from './exercises/frequency-identification/FrequencyIdentification'
 import MenuBar from './MenuBar'
 import { categories, ExerciseId, exercises } from './exercises'
 
