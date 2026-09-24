@@ -7,6 +7,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 - Tests: Vitest + Testing Library (jsdom). Lint: oxlint. CI runs lint, test and build (`.github/workflows/frontend.yml`).
 
 ## Typing
+- Strict TypeScript plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`.
 - Identifiers are branded types (`CategoryId`, `ExerciseId` in `src/exercises.ts`), never plain `string`. Build them with their same-named function (`CategoryId('pitch')`) only in the registry and tests.
 - External input (URL params) is never cast to an id: it is resolved by looking it up in the registry.
 - Compile-time guards use `// @ts-expect-error` (checked by `tsc -b` in `npm run build`).
