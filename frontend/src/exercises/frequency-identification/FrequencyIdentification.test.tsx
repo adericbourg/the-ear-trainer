@@ -5,7 +5,7 @@ import { startTone, stopTone } from '../../tone'
 
 vi.mock('../../tone', () => ({ startTone: vi.fn(), stopTone: vi.fn() }))
 
-// Math.random() = 0.5 draws 1200 Hz, inside the initial selector (1000-1500 Hz); 0 draws 100 Hz, outside.
+// Math.random() = 0.5 draws 1200 Hz, inside the initial Beginner selector (870-1700 Hz); 0 draws 100 Hz, outside.
 function renderExercise(random = 0.5) {
   vi.spyOn(Math, 'random').mockReturnValue(random)
   render(<FrequencyIdentification />)
@@ -80,8 +80,9 @@ describe('FrequencyIdentification', () => {
   })
 
   it('selector_movesWithKeyboard', () => {
-    // Given the selector at its initial position
+    // Given the Intermediate selector at its initial position
     const { selector } = renderExercise()
+    fireEvent.click(screen.getByRole('radio', { name: 'Intermediate' }))
     expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
 
     // When pressing PageUp, then Right arrow
@@ -121,7 +122,7 @@ describe('FrequencyIdentification', () => {
 
     // And the selector is locked
     fireEvent.keyDown(selector, { key: 'PageUp' })
-    expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '870 Hz to 1700 Hz')
 
     // And playback is still available
     fireEvent.click(play())
@@ -162,12 +163,35 @@ describe('FrequencyIdentification', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Missed!/)).not.toBeInTheDocument()
     expect(screen.queryByTestId('target-marker')).not.toBeInTheDocument()
-    expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
+    expect(selector).toHaveAttribute('aria-valuetext', '870 Hz to 1700 Hz')
     expect(selector).not.toHaveAttribute('aria-disabled', 'true')
     expect(selector).toHaveFocus()
 
     // And the new target is played next
     fireEvent.click(play())
     expect(startTone).toHaveBeenLastCalledWith(1200)
+  })
+  it('levelChange_resetsTheRoundAndNarrowsTheSelector', () => {
+    // Given a checked Beginner round, with playback running
+    const { selector, play, check } = renderExercise()
+    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
+    expect(selector).toHaveAttribute('aria-valuetext', '870 Hz to 1700 Hz')
+    fireEvent.click(play())
+    fireEvent.click(check())
+
+    // When switching to Expert
+    fireEvent.click(screen.getByRole('radio', { name: 'Expert' }))
+
+    // Then audio stops, the round is reset, and the selector spans a quarter octave
+    expect(stopTone).toHaveBeenCalled()
+    expect(play()).toHaveAccessibleName('Play')
+    expect(check()).toBeDisabled()
+    expect(screen.queryByText(/You guessed right!/)).not.toBeInTheDocument()
+    expect(selector).toHaveAttribute('aria-valuetext', '1100 Hz to 1300 Hz')
+    expect(selector).not.toHaveAttribute('aria-disabled', 'true')
+
+    // And Advanced spans a third of an octave
+    fireEvent.click(screen.getByRole('radio', { name: 'Advanced' }))
+    expect(selector).toHaveAttribute('aria-valuetext', '1100 Hz to 1400 Hz')
   })
 })

@@ -3,12 +3,12 @@ import { flushSync } from 'react-dom'
 import {
   ARROW_STEP,
   bounds,
-  CENTER_MAX,
-  CENTER_MIN,
+  centerMaxOf,
+  centerMinOf,
   clampCenter,
   F_MAX,
   F_MIN,
-  HALF_SPAN,
+  halfSpanOf,
   INITIAL_CENTER,
   isHit,
   nudge,
@@ -17,6 +17,7 @@ import {
   toFrequency,
   toPosition,
 } from './frequency'
+import { LEVELS, type Level } from '../intervals/interval'
 import shared from '../exercise.module.css'
 import styles from './FrequencyIdentification.module.css'
 import { startTone, stopTone } from '../../tone'
@@ -24,6 +25,7 @@ import { startTone, stopTone } from '../../tone'
 const percent = (position: number) => `${position * 100}%`
 
 export default function FrequencyIdentification() {
+  const [level, setLevel] = useState<Level>('beginner')
   const [target, setTarget] = useState(randomTarget)
   const [center, setCenter] = useState(INITIAL_CENTER)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -34,7 +36,7 @@ export default function FrequencyIdentification() {
   const nextRef = useRef<HTMLButtonElement>(null)
   const dragOffset = useRef(0)
 
-  const { low, high } = bounds(center)
+  const { low, high } = bounds(level, center)
 
   const togglePlayback = () => {
     if (isPlaying) {
@@ -51,15 +53,18 @@ export default function FrequencyIdentification() {
     nextRef.current?.focus()
   }
 
-  const next = () => {
+  const reset = (newLevel: Level) => {
     stopTone()
-    flushSync(() => {
-      setIsPlaying(false)
-      setTarget(randomTarget())
-      setCenter(INITIAL_CENTER)
-      setHasPlayed(false)
-      setIsChecked(false)
-    })
+    setLevel(newLevel)
+    setIsPlaying(false)
+    setTarget(randomTarget())
+    setCenter(INITIAL_CENTER)
+    setHasPlayed(false)
+    setIsChecked(false)
+  }
+
+  const next = () => {
+    flushSync(() => reset(level))
     selectorRef.current?.focus()
   }
 
@@ -81,19 +86,19 @@ export default function FrequencyIdentification() {
   const onSelectorKeyDown = (event: KeyboardEvent) => {
     if (isChecked) return
     const moves: Record<string, number> = {
-      ArrowLeft: nudge(center, 1 / ARROW_STEP),
-      ArrowDown: nudge(center, 1 / ARROW_STEP),
-      ArrowRight: nudge(center, ARROW_STEP),
-      ArrowUp: nudge(center, ARROW_STEP),
+      ArrowLeft: nudge(level, center, 1 / ARROW_STEP),
+      ArrowDown: nudge(level, center, 1 / ARROW_STEP),
+      ArrowRight: nudge(level, center, ARROW_STEP),
+      ArrowUp: nudge(level, center, ARROW_STEP),
       PageDown: center / PAGE_STEP,
       PageUp: center * PAGE_STEP,
-      Home: CENTER_MIN,
-      End: CENTER_MAX,
+      Home: centerMinOf(level),
+      End: centerMaxOf(level),
     }
     const moved = moves[event.key]
     if (moved !== undefined) {
       event.preventDefault()
-      setCenter(clampCenter(moved))
+      setCenter(clampCenter(level, moved))
     } else if (event.key === 'Enter' && hasPlayed) {
       check()
     }
@@ -110,21 +115,31 @@ export default function FrequencyIdentification() {
     const position = positionAt(event.clientX)
     const isOnSelector = event.target === selectorRef.current
     dragOffset.current = isOnSelector ? position - toPosition(center) : 0
-    if (!isOnSelector) setCenter(clampCenter(toFrequency(position)))
+    if (!isOnSelector) setCenter(clampCenter(level, toFrequency(position)))
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   const onTrackPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
-    setCenter(clampCenter(toFrequency(positionAt(event.clientX) - dragOffset.current)))
+    setCenter(clampCenter(level, toFrequency(positionAt(event.clientX) - dragOffset.current)))
   }
 
-  const lowPosition = toPosition(center / HALF_SPAN)
-  const highPosition = toPosition(center * HALF_SPAN)
-  const result = isChecked ? (isHit(target, center) ? 'hit' : 'miss') : undefined
+  const lowPosition = toPosition(center / halfSpanOf(level))
+  const highPosition = toPosition(center * halfSpanOf(level))
+  const result = isChecked ? (isHit(level, target, center) ? 'hit' : 'miss') : undefined
 
   return (
     <div className={shared.exercise}>
+      <fieldset className={shared.choices}>
+        <legend>Level</legend>
+        {LEVELS.map(({ level: value, name }) => (
+          <label key={value} className={shared.choice}>
+            <input type="radio" name="level" value={value} checked={level === value} onChange={() => reset(value)} />
+            {name}
+          </label>
+        ))}
+      </fieldset>
+
       <p className={shared.instructions}>
         Click Play to hear a sound of a given frequency.
         <br />
@@ -160,8 +175,8 @@ export default function FrequencyIdentification() {
             role="slider"
             tabIndex={0}
             aria-label="Frequency guess"
-            aria-valuemin={Math.round(CENTER_MIN)}
-            aria-valuemax={Math.round(CENTER_MAX)}
+            aria-valuemin={Math.round(centerMinOf(level))}
+            aria-valuemax={Math.round(centerMaxOf(level))}
             aria-valuenow={Math.round(center)}
             aria-valuetext={`${low} Hz to ${high} Hz`}
             aria-disabled={isChecked}

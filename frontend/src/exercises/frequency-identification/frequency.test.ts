@@ -2,17 +2,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ARROW_STEP,
   bounds,
-  CENTER_MAX,
-  CENTER_MIN,
+  centerMaxOf,
+  centerMinOf,
   clampCenter,
   F_MAX,
   F_MIN,
+  INITIAL_CENTER,
   isHit,
   nudge,
   randomTarget,
   toFrequency,
   toPosition,
 } from './frequency'
+import { LEVELS } from '../intervals/interval'
 
 describe('frequency', () => {
   afterEach(() => {
@@ -49,46 +51,59 @@ describe('frequency', () => {
     // Given the mockup center (geometric middle of 600-850 Hz)
     const center = Math.sqrt(600 * 850)
 
-    // When computing its bounds
-    const { low, high } = bounds(center)
+    // When computing its bounds in Intermediate
+    const { low, high } = bounds('intermediate', center)
 
     // Then they are rounded to 10 Hz with a √2 ratio
     expect(low).toBe(600)
     expect(high).toBe(850)
   })
 
+  it('bounds_narrowWithTheLevel', () => {
+    expect(bounds('beginner', INITIAL_CENTER)).toEqual({ low: 870, high: 1700 })
+    expect(bounds('intermediate', INITIAL_CENTER)).toEqual({ low: 1000, high: 1500 })
+    expect(bounds('advanced', INITIAL_CENTER)).toEqual({ low: 1100, high: 1400 })
+    expect(bounds('expert', INITIAL_CENTER)).toEqual({ low: 1100, high: 1300 })
+  })
+
   it('clampCenter_keepsBoundsWithinRange', () => {
-    expect(clampCenter(10)).toBe(CENTER_MIN)
-    expect(clampCenter(100000)).toBe(CENTER_MAX)
-    expect(clampCenter(1000)).toBe(1000)
-    expect(bounds(CENTER_MIN)).toEqual({ low: F_MIN, high: 140 })
-    expect(bounds(CENTER_MAX)).toEqual({ low: 11000, high: F_MAX })
+    for (const { level } of LEVELS) {
+      expect(clampCenter(level, 10)).toBe(centerMinOf(level))
+      expect(clampCenter(level, 100000)).toBe(centerMaxOf(level))
+      expect(clampCenter(level, 1000)).toBe(1000)
+      expect(bounds(level, centerMinOf(level)).low).toBe(F_MIN)
+      expect(bounds(level, centerMaxOf(level)).high).toBe(F_MAX)
+    }
+    expect(bounds('intermediate', centerMinOf('intermediate'))).toEqual({ low: F_MIN, high: 140 })
+    expect(bounds('intermediate', centerMaxOf('intermediate'))).toEqual({ low: 11000, high: F_MAX })
   })
 
   it('nudge_alwaysChangesDisplayedBounds', () => {
-    for (const [start, factor, end] of [
-      [CENTER_MIN, ARROW_STEP, CENTER_MAX],
-      [CENTER_MAX, 1 / ARROW_STEP, CENTER_MIN],
-    ] as const) {
-      // Given the selector at one end of the range
-      let center = start
-      while (center !== end) {
-        // When nudging it toward the other end
-        const next = nudge(center, factor)
+    for (const { level } of LEVELS) {
+      for (const [start, factor, end] of [
+        [centerMinOf(level), ARROW_STEP, centerMaxOf(level)],
+        [centerMaxOf(level), 1 / ARROW_STEP, centerMinOf(level)],
+      ] as const) {
+        // Given the selector at one end of the range
+        let center = start
+        while (center !== end) {
+          // When nudging it toward the other end
+          const next = nudge(level, center, factor)
 
-        // Then each nudge changes a displayed bound, unless it stops at the end of the range
-        if (next !== end) expect(bounds(next)).not.toEqual(bounds(center))
-        center = next
+          // Then each nudge changes a displayed bound, unless it stops at the end of the range
+          if (next !== end) expect(bounds(level, next)).not.toEqual(bounds(level, center))
+          center = next
+        }
       }
     }
   })
 
   it('isHit_ofTargetOnADisplayedBound_isTrue', () => {
     const center = Math.sqrt(600 * 850)
-    expect(isHit(600, center)).toBe(true)
-    expect(isHit(850, center)).toBe(true)
-    expect(isHit(720, center)).toBe(true)
-    expect(isHit(590, center)).toBe(false)
-    expect(isHit(860, center)).toBe(false)
+    expect(isHit('intermediate', 600, center)).toBe(true)
+    expect(isHit('intermediate', 850, center)).toBe(true)
+    expect(isHit('intermediate', 720, center)).toBe(true)
+    expect(isHit('intermediate', 590, center)).toBe(false)
+    expect(isHit('intermediate', 860, center)).toBe(false)
   })
 })
