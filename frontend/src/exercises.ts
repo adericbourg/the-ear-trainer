@@ -14,6 +14,7 @@ export const categories: readonly Category[] = [
 ]
 export const exercises: readonly Exercise[] = [
   { id: ExerciseId('intervals'), name: 'Intervals', categoryId: CategoryId('pitch') },
+  { id: ExerciseId('chords'), name: 'Chords', categoryId: CategoryId('pitch') },
   {
     id: ExerciseId('frequency-identification'),
     name: 'Frequency identification',
