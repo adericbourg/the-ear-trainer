@@ -1,0 +1,96 @@
+/* Segmented control: native radios, visually hidden but focusable. */
+.levels {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.levels legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.level {
+  position: relative;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--content-fg);
+  cursor: pointer;
+}
+
+@media (max-width: 30rem) {
+  .level {
+    padding-inline: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+.level + .level {
+  margin-left: -2px;
+}
+
+.level:first-of-type {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.level:last-of-type {
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.level input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.level:has(:focus-visible) {
+  outline: 2px solid var(--content-fg);
+  outline-offset: 2px;
+}
+
+/* Selection is shown by the inverted colors and a check mark, not by color alone. */
+.level:has(:checked),
+.toggle[aria-pressed='true'] {
+  color: var(--content-bg);
+  background: var(--content-fg);
+}
+
+.level:has(:checked)::before,
+.toggle[aria-pressed='true']::before {
+  content: '✓ ' / '';
+}
+
+.toggle[aria-pressed='true']:disabled {
+  color: var(--content-bg);
+  background: var(--disabled-fg);
+}
+
+.box {
+  width: 3rem;
+  transform: translateX(-50%);
+}
+
+.stopLabel {
+  position: relative;
+  height: 1.5em;
+}
+
+.stopLabel span {
+  position: absolute;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* One row of buttons: line height + vertical padding + borders of the shared .button. */
+.qualifiers {
+  min-height: calc(1lh + 1rem + 4px);
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

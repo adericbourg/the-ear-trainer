@@ -8,8 +8,12 @@ export const ExerciseId = (value: string) => value as ExerciseId
 export type Category = { readonly id: CategoryId; readonly name: string }
 export type Exercise = { readonly id: ExerciseId; readonly name: string; readonly categoryId: CategoryId }
 
-export const categories: readonly Category[] = [{ id: CategoryId('sound-engineering'), name: 'Sound engineering' }]
+export const categories: readonly Category[] = [
+  { id: CategoryId('pitch'), name: 'Pitch' },
+  { id: CategoryId('sound-engineering'), name: 'Sound engineering' },
+]
 export const exercises: readonly Exercise[] = [
+  { id: ExerciseId('intervals'), name: 'Intervals', categoryId: CategoryId('pitch') },
   {
     id: ExerciseId('frequency-identification'),
     name: 'Frequency identification',
