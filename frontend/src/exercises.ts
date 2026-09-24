@@ -20,4 +20,5 @@ export const exercises: readonly Exercise[] = [
     name: 'Frequency identification',
     categoryId: CategoryId('sound-engineering'),
   },
+  { id: ExerciseId('panning'), name: 'Panning', categoryId: CategoryId('sound-engineering') },
 ]

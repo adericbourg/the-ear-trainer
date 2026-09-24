@@ -14,7 +14,7 @@ function aWeighting(frequency: number) {
 export const gainFor = (frequency: number) => Math.min(1, GAIN * 10 ** ((aWeighting(1000) - aWeighting(frequency)) / 20))
 
 let context: AudioContext | undefined
-let playing: { oscillator: OscillatorNode; gain: GainNode } | undefined
+let playing: { source: AudioScheduledSourceNode; gain: GainNode } | undefined
 
 export function startTone(frequency: number) {
   stopTone()
@@ -27,7 +27,46 @@ export function startTone(frequency: number) {
   gain.gain.setValueAtTime(0, now)
   gain.gain.linearRampToValueAtTime(gainFor(frequency),now + FADE_SECONDS)
   oscillator.start(now)
-  playing = { oscillator, gain }
+  playing = { source: oscillator, gain }
+}
+
+const NOISE_GAIN = 0.2
+const NOISE_SECONDS = 2
+let noise: AudioBuffer | undefined
+
+// Pink noise (Paul Kellet's economy filter over white noise), peak-normalized.
+function pinkNoise(audio: AudioContext) {
+  const buffer = new AudioBuffer({ length: NOISE_SECONDS * audio.sampleRate, sampleRate: audio.sampleRate })
+  const data = buffer.getChannelData(0)
+  let b0 = 0
+  let b1 = 0
+  let b2 = 0
+  let peak = 0
+  for (let i = 0; i < data.length; i++) {
+    const white = Math.random() * 2 - 1
+    b0 = 0.99765 * b0 + white * 0.099046
+    b1 = 0.963 * b1 + white * 0.2965164
+    b2 = 0.57 * b2 + white * 1.0526913
+    const sample = b0 + b1 + b2 + white * 0.1848
+    data[i] = sample
+    peak = Math.max(peak, Math.abs(sample))
+  }
+  for (let i = 0; i < data.length; i++) data[i]! /= peak
+  return buffer
+}
+
+// StereoPannerNode applies an equal-power law, so loudness is not a cue to the position.
+export function startNoise(pan: number) {
+  stopTone()
+  context ??= new AudioContext()
+  const now = context.currentTime
+  const source = new AudioBufferSourceNode(context, { buffer: (noise ??= pinkNoise(context)), loop: true })
+  const gain = new GainNode(context, { gain: 0 })
+  source.connect(gain).connect(new StereoPannerNode(context, { pan: pan / 100 })).connect(context.destination)
+  gain.gain.setValueAtTime(0, now)
+  gain.gain.linearRampToValueAtTime(NOISE_GAIN, now + FADE_SECONDS)
+  source.start(now)
+  playing = { source, gain }
 }
 
 const NOTE_GAIN = 0.4
@@ -76,10 +115,10 @@ export function stopInterval() {
 export function stopTone() {
   if (!context || !playing) return
   const now = context.currentTime
-  const { oscillator, gain } = playing
+  const { source, gain } = playing
   gain.gain.cancelScheduledValues(now)
   gain.gain.setValueAtTime(gain.gain.value, now)
   gain.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
-  oscillator.stop(now + FADE_SECONDS)
+  source.stop(now + FADE_SECONDS)
   playing = undefined
 }

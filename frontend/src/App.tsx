@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router'
 import Chords from './exercises/chords/Chords'
 import FrequencyIdentification from './exercises/frequency-identification/FrequencyIdentification'
 import Intervals from './exercises/intervals/Intervals'
+import Panning from './exercises/panning/Panning'
 import MenuBar from './MenuBar'
 import { categories, ExerciseId, exercises } from './exercises'
 
@@ -10,6 +11,7 @@ const exercisePages = new Map<ExerciseId, () => ReactNode>([
   [ExerciseId('frequency-identification'), () => <FrequencyIdentification />],
   [ExerciseId('intervals'), () => <Intervals />],
   [ExerciseId('chords'), () => <Chords />],
+  [ExerciseId('panning'), () => <Panning />],
 ])
 
 function Home() {
