@@ -19,7 +19,6 @@ import {
 } from './frequency'
 import { LEVELS, type Level } from '../intervals/interval'
 import shared from '../exercise.module.css'
-import styles from './FrequencyIdentification.module.css'
 import { startTone, stopTone } from '../../tone'
 
 const percent = (position: number) => `${position * 100}%`
@@ -193,15 +192,15 @@ export default function FrequencyIdentification() {
             />
           )}
         </div>
-        <div className={styles.boundLabels} aria-hidden="true">
-          <span className={styles.lowLabel} style={{ right: percent(1 - lowPosition) }}>
+        <div className={shared.boundLabels} aria-hidden="true">
+          <span className={shared.lowLabel} style={{ right: percent(1 - lowPosition) }}>
             {low}Hz
           </span>
-          <span className={styles.highLabel} style={{ left: percent(highPosition) }}>
+          <span className={shared.highLabel} style={{ left: percent(highPosition) }}>
             {high}Hz
           </span>
           {isChecked && (
-            <span className={styles.markerLabel} style={{ left: percent(toPosition(target)) }}>
+            <span className={shared.markerLabel} style={{ left: percent(toPosition(target)) }}>
               {target}Hz
             </span>
           )}
