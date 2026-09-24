@@ -1,7 +1,20 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+  --menu-bg: #1b1f2a;
+  --menu-bg-raised: #262c3b;
+  --menu-fg: #f1f3f7;
+  --accent: #f5b841;
+  --content-bg: #ffffff;
+  --content-fg: #1b1f2a;
+  font-family: system-ui, sans-serif;
 }
 
 body {
   margin: 0;
+  background: var(--content-bg);
+  color: var(--content-fg);
+}
+
+main {
+  padding: 1rem;
 }

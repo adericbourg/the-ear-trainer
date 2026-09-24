@@ -1,14 +1,19 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 
 describe('App', () => {
-  it('render_displaysAppTitle', () => {
-    // Given the App component
-    // When it is rendered
-    render(<App />)
+  it('render_ofUnknownRoute_redirectsToHome', () => {
+    // Given an unknown route
+    // When the App is rendered
+    render(
+      <MemoryRouter initialEntries={['/unknown/route/here']}>
+        <App />
+      </MemoryRouter>,
+    )
 
-    // Then the app title is displayed
-    expect(screen.getByRole('heading', { name: 'The Ear Trainer' })).toBeInTheDocument()
+    // Then the home page is displayed
+    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
   })
 })
