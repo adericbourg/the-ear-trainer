@@ -17,6 +17,7 @@ import {
   toFrequency,
   toPosition,
 } from './frequency'
+import shared from '../exercise.module.css'
 import styles from './FrequencyIdentification.module.css'
 import { startTone, stopTone } from '../../tone'
 
@@ -123,8 +124,8 @@ export default function FrequencyIdentification() {
   const result = isChecked ? (isHit(target, center) ? 'hit' : 'miss') : undefined
 
   return (
-    <div className={styles.exercise}>
-      <p className={styles.instructions}>
+    <div className={shared.exercise}>
+      <p className={shared.instructions}>
         Click Play to hear a sound of a given frequency.
         <br />
         Then slide the box to what you think is the frequency of that sound.
@@ -132,8 +133,8 @@ export default function FrequencyIdentification() {
         When you are sure of yourself, click Check.
       </p>
 
-      <button type="button" className={styles.button} aria-keyshortcuts="Space" onClick={togglePlayback}>
-        <svg className={styles.icon} viewBox="0 0 16 16" aria-hidden="true">
+      <button type="button" className={shared.button} aria-keyshortcuts="Space" onClick={togglePlayback}>
+        <svg className={shared.icon} viewBox="0 0 16 16" aria-hidden="true">
           {isPlaying ? (
             <path d="M4 2h3v12H4zM9 2h3v12H9z" />
           ) : (
@@ -143,14 +144,14 @@ export default function FrequencyIdentification() {
         {isPlaying ? 'Pause' : 'Play'}
       </button>
 
-      <div className={styles.axis}>
-        <div className={styles.endLabels} aria-hidden="true">
+      <div className={shared.axis}>
+        <div className={shared.endLabels} aria-hidden="true">
           <span>{F_MIN}Hz</span>
           <span>{F_MAX}Hz</span>
         </div>
         <div
           ref={trackRef}
-          className={styles.track}
+          className={shared.track}
           onPointerDown={onTrackPointerDown}
           onPointerMove={onTrackPointerMove}
         >
@@ -164,7 +165,7 @@ export default function FrequencyIdentification() {
             aria-valuenow={Math.round(center)}
             aria-valuetext={`${low} Hz to ${high} Hz`}
             aria-disabled={isChecked}
-            className={styles.selector}
+            className={shared.selector}
             data-result={result}
             style={{ left: percent(lowPosition), width: percent(highPosition - lowPosition) }}
             onKeyDown={onSelectorKeyDown}
@@ -172,7 +173,7 @@ export default function FrequencyIdentification() {
           {isChecked && (
             <div
               data-testid="target-marker"
-              className={styles.marker}
+              className={shared.marker}
               style={{ left: percent(toPosition(target)) }}
             />
           )}
@@ -192,13 +193,13 @@ export default function FrequencyIdentification() {
         </div>
       </div>
 
-      <div className={styles.result}>
+      <div className={shared.result}>
         {isChecked ? (
-          <button ref={nextRef} type="button" className={styles.button} data-result={result} onClick={next}>
+          <button ref={nextRef} type="button" className={shared.button} data-result={result} onClick={next}>
             Next
           </button>
         ) : (
-          <button type="button" className={styles.button} disabled={!hasPlayed} onClick={check}>
+          <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>
             Check
           </button>
         )}
