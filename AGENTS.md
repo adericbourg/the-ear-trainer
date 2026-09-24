@@ -6,6 +6,11 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 - Frontend only, in `frontend/`: React 19, TypeScript (strict), Vite, react-router (declarative mode).
 - Tests: Vitest + Testing Library (jsdom). Lint: oxlint. CI runs lint, test and build (`.github/workflows/frontend.yml`).
 
+## Typing
+- Identifiers are branded types (`CategoryId`, `ExerciseId` in `src/exercises.ts`), never plain `string`. Build them with their same-named function (`CategoryId('pitch')`) only in the registry and tests.
+- External input (URL params) is never cast to an id: it is resolved by looking it up in the registry.
+- Compile-time guards use `// @ts-expect-error` (checked by `tsc -b` in `npm run build`).
+
 ## Routing
 - `/`: home page.
 - `/:categoryId/:exerciseId`: exercise page. Redirects to `/` when the pair is not in the registry.
@@ -23,7 +28,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 - Below 768px the categories collapse behind a "Menu" burger button.
 
 ## Registering an exercise
-1. Add its category to `categories` in `frontend/src/exercises.ts` if it doesn't exist (`{ id, name }`).
-2. Add `{ id, name, categoryId }` to `exercises`.
+1. Add its category to `categories` in `frontend/src/exercises.ts` if it doesn't exist (`{ id: CategoryId('...'), name }`).
+2. Add `{ id: ExerciseId('...'), name, categoryId: CategoryId('...') }` to `exercises`.
 3. Categories show up in the menu only when they have at least one exercise.
 4. Ids are used in the URL (`/<categoryId>/<exerciseId>`): use kebab-case.

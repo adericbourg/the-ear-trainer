@@ -1,5 +1,12 @@
-export type Category = { id: string; name: string }
-export type Exercise = { id: string; name: string; categoryId: string }
+type Brand<T, B extends string> = T & { readonly __brand: B }
 
-export const categories: Category[] = []
-export const exercises: Exercise[] = []
+export type CategoryId = Brand<string, 'CategoryId'>
+export const CategoryId = (value: string) => value as CategoryId
+export type ExerciseId = Brand<string, 'ExerciseId'>
+export const ExerciseId = (value: string) => value as ExerciseId
+
+export type Category = { readonly id: CategoryId; readonly name: string }
+export type Exercise = { readonly id: ExerciseId; readonly name: string; readonly categoryId: CategoryId }
+
+export const categories: readonly Category[] = []
+export const exercises: readonly Exercise[] = []

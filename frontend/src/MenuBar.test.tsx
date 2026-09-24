@@ -2,16 +2,22 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import MenuBar from './MenuBar'
-import type { Category, Exercise } from './exercises'
+import { CategoryId, ExerciseId, type Category, type Exercise } from './exercises'
 
 const categories: Category[] = [
-  { id: 'pitch', name: 'Pitch' },
-  { id: 'sound-engineering', name: 'Sound engineering' },
+  { id: CategoryId('pitch'), name: 'Pitch' },
+  { id: CategoryId('sound-engineering'), name: 'Sound engineering' },
 ]
 const exercises: Exercise[] = [
-  { id: 'panning', name: 'Panning', categoryId: 'sound-engineering' },
-  { id: 'frequency', name: 'Frequency identification', categoryId: 'sound-engineering' },
+  { id: ExerciseId('panning'), name: 'Panning', categoryId: CategoryId('sound-engineering') },
+  { id: ExerciseId('frequency'), name: 'Frequency identification', categoryId: CategoryId('sound-engineering') },
 ]
+
+// Compile-time guards (checked by `tsc -b`): ids are not interchangeable with plain strings nor with each other.
+// @ts-expect-error a plain string is not a CategoryId
+void ('pitch' satisfies CategoryId)
+// @ts-expect-error an ExerciseId is not a CategoryId
+void (ExerciseId('panning') satisfies CategoryId)
 
 function renderMenuBar(path = '/') {
   render(

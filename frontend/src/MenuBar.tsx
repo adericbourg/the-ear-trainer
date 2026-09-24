@@ -1,13 +1,13 @@
 import { useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { Link, NavLink } from 'react-router'
-import type { Category, Exercise } from './exercises'
+import type { Category, CategoryId, Exercise } from './exercises'
 import styles from './MenuBar.module.css'
 
-type Props = { categories: Category[]; exercises: Exercise[] }
+type Props = { categories: readonly Category[]; exercises: readonly Exercise[] }
 
 export default function MenuBar({ categories, exercises }: Props) {
   const [isBurgerOpen, setIsBurgerOpen] = useState(false)
-  const [openCategoryId, setOpenCategoryId] = useState<string | null>(null)
+  const [openCategoryId, setOpenCategoryId] = useState<CategoryId | null>(null)
 
   const closeAll = () => {
     setIsBurgerOpen(false)
