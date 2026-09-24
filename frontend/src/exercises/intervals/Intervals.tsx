@@ -119,10 +119,10 @@ export default function Intervals() {
 
   return (
     <div className={shared.exercise}>
-      <fieldset className={styles.levels}>
+      <fieldset className={shared.choices}>
         <legend>Level</legend>
         {LEVELS.map(({ level: value, name }) => (
-          <label key={value} className={styles.level}>
+          <label key={value} className={shared.choice}>
             <input type="radio" name="level" value={value} checked={level === value} onChange={() => reset(value)} />
             {name}
           </label>

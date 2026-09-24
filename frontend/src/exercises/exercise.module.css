@@ -115,3 +115,77 @@
 .result p {
   margin: 0;
 }
+
+/* Segmented control: native radios, visually hidden but focusable. */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.choices legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.choice {
+  position: relative;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--content-fg);
+  cursor: pointer;
+}
+
+@media (max-width: 30rem) {
+  .choice {
+    padding-inline: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+.choice + .choice {
+  margin-left: -2px;
+}
+
+.choice:first-of-type {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.choice:last-of-type {
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.choice:has(:focus-visible) {
+  outline: 2px solid var(--content-fg);
+  outline-offset: 2px;
+}
+
+/* Selection is shown by the inverted colors and a check mark, not by color alone. */
+.choice:has(:checked) {
+  color: var(--content-bg);
+  background: var(--content-fg);
+}
+
+.choice:has(:checked)::before {
+  content: '✓ ' / '';
+}
+
+.choice:has(:disabled) {
+  color: var(--disabled-fg);
+  border-color: var(--disabled-fg);
+  cursor: not-allowed;
+}
+
+.choice:has(:checked:disabled) {
+  color: var(--content-bg);
+  background: var(--disabled-fg);
+}

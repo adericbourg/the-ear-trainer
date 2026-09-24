@@ -20,7 +20,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 
 ## Styling
 - Plain CSS: global tokens in `src/index.css` (`:root` custom properties), component styles in CSS modules (`*.module.css`).
-- Exercise layout, buttons and slider (track, selector, hit/miss result, marker) are shared in `src/exercises/exercise.module.css`; an exercise module only adds what is specific to it.
+- Exercise layout, buttons, segmented radio choices (`choices`/`choice`) and slider (track, selector, hit/miss result, marker) are shared in `src/exercises/exercise.module.css`; an exercise module only adds what is specific to it.
 - No styling dependency.
 - Palette: menu `--menu-bg` #1b1f2a / `--menu-bg-raised` #262c3b, text `--menu-fg` #f1f3f7, single accent `--accent` amber #f5b841, content white with `--content-fg` #1b1f2a. Every text/background pair is ≥ 4.5:1.
 
