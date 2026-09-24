@@ -5,9 +5,9 @@ import {
   isExpert,
   isHarmonic,
   LEVELS,
-  optionsOf,
   randomQuestion,
-  stopOfTarget,
+  simpleOf,
+  stopName,
   stopsOf,
   targetName,
   toFrequency,
@@ -24,7 +24,6 @@ export default function Intervals() {
   const [level, setLevel] = useState<Level>('beginner')
   const [question, setQuestion] = useState(() => randomQuestion('beginner'))
   const [stopIndex, setStopIndex] = useState(() => middleStopOf('beginner'))
-  const [maybeQualifier, setMaybeQualifier] = useState<number>()
   const [octaves, setOctaves] = useState(0)
   const [hasPlayed, setHasPlayed] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -34,10 +33,7 @@ export default function Intervals() {
 
   const stops = stopsOf(level)
   const stop = stops[stopIndex]!
-  const options = optionsOf(level, stop)
-  const maybeInterval = options.length === 1 ? options[0] : maybeQualifier === undefined ? undefined : options[maybeQualifier]
-  const maybeAnswer = maybeInterval && maybeInterval.semitones + 12 * octaves
-  const canCheck = hasPlayed && maybeAnswer !== undefined
+  const answer = stop + 12 * octaves
 
   const play = () => {
     playInterval(question.notes.map(toFrequency), isHarmonic(level))
@@ -54,7 +50,6 @@ export default function Intervals() {
     setLevel(newLevel)
     setQuestion(randomQuestion(newLevel, newLevel === level ? question.semitones : undefined))
     setStopIndex(middleStopOf(newLevel))
-    setMaybeQualifier(undefined)
     setOctaves(0)
     setHasPlayed(false)
     setIsChecked(false)
@@ -66,10 +61,7 @@ export default function Intervals() {
   }
 
   const moveTo = (index: number) => {
-    const clamped = Math.min(Math.max(index, 0), stops.length - 1)
-    if (clamped === stopIndex) return
-    setStopIndex(clamped)
-    setMaybeQualifier(undefined)
+    setStopIndex(Math.min(Math.max(index, 0), stops.length - 1))
   }
 
   // Space plays, except on buttons and links where it keeps its native activation.
@@ -101,7 +93,7 @@ export default function Intervals() {
     if (moved !== undefined) {
       event.preventDefault()
       moveTo(moved)
-    } else if (event.key === 'Enter' && canCheck) {
+    } else if (event.key === 'Enter' && hasPlayed) {
       check()
     }
   }
@@ -123,7 +115,7 @@ export default function Intervals() {
   }
 
   const percent = (index: number) => `${(index / (stops.length - 1)) * 100}%`
-  const result = isChecked ? (maybeAnswer === question.semitones ? 'hit' : 'miss') : undefined
+  const result = isChecked ? (answer === question.semitones ? 'hit' : 'miss') : undefined
 
   return (
     <div className={shared.exercise}>
@@ -141,8 +133,6 @@ export default function Intervals() {
         Click Play to hear the interval.
         <br />
         Then slide the box to what you think is the interval.
-        <br />
-        Use the buttons below the slider if that interval needs a qualifier.
         <br />
         {isExpert(level) && (
           <>
@@ -162,8 +152,8 @@ export default function Intervals() {
 
       <div className={shared.axis}>
         <div className={shared.endLabels} aria-hidden="true">
-          <span>{stops[0]}</span>
-          <span>{stops.at(-1)}</span>
+          <span>{stopName(stops[0]!)}</span>
+          <span>{stopName(stops.at(-1)!)}</span>
         </div>
         <div ref={trackRef} className={shared.track} onPointerDown={onTrackPointerDown} onPointerMove={onTrackPointerMove}>
           <div
@@ -174,7 +164,7 @@ export default function Intervals() {
             aria-valuemin={1}
             aria-valuemax={stops.length}
             aria-valuenow={stopIndex + 1}
-            aria-valuetext={answerName(stop, maybeInterval, octaves)}
+            aria-valuetext={answerName(stop, octaves)}
             aria-disabled={isChecked}
             className={`${shared.selector} ${styles.box}`}
             data-result={result}
@@ -185,33 +175,13 @@ export default function Intervals() {
             <div
               data-testid="target-marker"
               className={shared.marker}
-              style={{ left: percent(stops.indexOf(stopOfTarget(question.semitones))) }}
+              style={{ left: percent(stops.indexOf(simpleOf(question.semitones))) }}
             />
           )}
         </div>
         <div className={styles.stopLabel} aria-hidden="true">
-          <span style={{ left: percent(stopIndex) }}>{stop}</span>
+          <span style={{ left: percent(stopIndex) }}>{stopName(stop)}</span>
         </div>
-      </div>
-
-      {/* Always rendered so the controls below don't jump when the qualifiers appear. */}
-      <div className={styles.qualifiers}>
-        {options.length === 2 && (
-          <div role="group" aria-label="Quality" className={styles.group}>
-            {options.map((option, i) => (
-              <button
-                key={option.qualifier}
-                type="button"
-                className={`${shared.button} ${styles.toggle}`}
-                aria-pressed={maybeQualifier === i}
-                disabled={isChecked}
-                onClick={() => setMaybeQualifier(i)}
-              >
-                {option.qualifier}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {isExpert(level) && (
@@ -237,7 +207,7 @@ export default function Intervals() {
             Next
           </button>
         ) : (
-          <button type="button" className={shared.button} disabled={!canCheck} onClick={check}>
+          <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>
             Check
           </button>
         )}

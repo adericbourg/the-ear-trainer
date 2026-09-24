@@ -84,11 +84,6 @@
   transform: translateX(-50%);
 }
 
-/* One row of buttons: line height + vertical padding + borders of the shared .button. */
-.qualifiers {
-  min-height: calc(1lh + 1rem + 4px);
-}
-
 .group {
   display: flex;
   flex-wrap: wrap;

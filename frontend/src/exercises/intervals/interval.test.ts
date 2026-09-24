@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { answerName, optionsOf, poolOf, randomQuestion, stopOfTarget, stopsOf, targetName, toFrequency } from './interval'
+import { answerName, poolOf, randomQuestion, simpleOf, stopName, stopsOf, targetName, toFrequency } from './interval'
 
 describe('interval', () => {
   afterEach(() => {
@@ -13,29 +13,35 @@ describe('interval', () => {
     expect(poolOf('expert')).toEqual(Array.from({ length: 36 }, (_, i) => i + 1))
   })
 
-  it('stopsOf_andOptionsOf_giveQualifiersOnlyWhenTwoQualitiesArePooled', () => {
-    expect(stopsOf('beginner')).toEqual(['2nd', '3rd', '4th', '5th', 'Octave'])
-    expect(stopsOf('advanced')).toEqual(['2nd', '3rd', '4th', 'Tritone', '5th', '6th', '7th', 'Octave'])
-    expect(optionsOf('beginner', '3rd').map((i) => i.qualifier)).toEqual(['minor', 'major'])
-    expect(optionsOf('beginner', '4th')).toEqual([{ stop: '4th', semitones: 5 }])
-    expect(optionsOf('intermediate', 'Tritone').map((i) => i.semitones)).toEqual([6, 6])
-    expect(optionsOf('intermediate', '6th')).toEqual([{ stop: '6th', qualifier: 'major', semitones: 9 }])
-    expect(optionsOf('intermediate', '7th')).toEqual([{ stop: '7th', qualifier: 'minor', semitones: 10 }])
-    expect(optionsOf('advanced', '6th')).toHaveLength(2)
+  it('stopsOf_eachLevel_namesOneStopPerIntervalInOrder', () => {
+    expect(stopsOf('beginner').map(stopName)).toEqual(['minor 2nd', 'major 2nd', 'minor 3rd', 'major 3rd', '4th', '5th', 'Octave'])
+    expect(stopsOf('intermediate').map(stopName)).toEqual([
+      'minor 2nd',
+      'major 2nd',
+      'minor 3rd',
+      'major 3rd',
+      '4th',
+      'Tritone',
+      '5th',
+      'major 6th',
+      'minor 7th',
+      'Octave',
+    ])
+    expect(stopsOf('advanced').map(stopName)).toContain('minor 6th')
+    expect(stopsOf('expert')).toHaveLength(12)
   })
 
   it('answerName_andTargetName_useDisplayNames', () => {
-    const [minorThird] = optionsOf('expert', '3rd')
-    const [augmentedFourth] = optionsOf('expert', 'Tritone')
-    expect(answerName('3rd', minorThird, 1)).toBe('minor 3rd + 1 octave')
-    expect(answerName('3rd', undefined, 0)).toBe('3rd')
-    expect(answerName('Tritone', augmentedFourth, 2)).toBe('augmented 4th + 2 octaves')
+    expect(answerName(3, 1)).toBe('minor 3rd + 1 octave')
+    expect(answerName(6, 2)).toBe('Tritone + 2 octaves')
+    expect(answerName(5, 0)).toBe('4th')
     expect(targetName(5)).toBe('4th')
     expect(targetName(12)).toBe('Octave')
     expect(targetName(15)).toBe('minor 3rd + 1 octave')
     expect(targetName(18)).toBe('tritone (augmented 4th / diminished 5th) + 1 octave')
     expect(targetName(36)).toBe('Octave + 2 octaves')
-    expect(stopOfTarget(30)).toBe('Tritone')
+    expect(simpleOf(30)).toBe(6)
+    expect(simpleOf(24)).toBe(12)
   })
 
   it('randomQuestion_neverRepeatsThePreviousInterval', () => {
