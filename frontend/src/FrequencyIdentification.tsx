@@ -168,7 +168,7 @@ export default function FrequencyIdentification() {
             style={{ left: percent(lowPosition), width: percent(highPosition - lowPosition) }}
             onKeyDown={onSelectorKeyDown}
           />
-          {result === 'miss' && (
+          {isChecked && (
             <div
               data-testid="target-marker"
               className={styles.marker}
@@ -183,7 +183,7 @@ export default function FrequencyIdentification() {
           <span className={styles.highLabel} style={{ left: percent(highPosition) }}>
             {high}Hz
           </span>
-          {result === 'miss' && (
+          {isChecked && (
             <span className={styles.markerLabel} style={{ left: percent(toPosition(target)) }}>
               {target}Hz
             </span>

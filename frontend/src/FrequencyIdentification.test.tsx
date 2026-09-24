@@ -111,12 +111,12 @@ describe('FrequencyIdentification', () => {
     // When clicking Check
     fireEvent.click(check())
 
-    // Then the result is a hit, without marker
+    // Then the result is a hit, with a marker
     const next = screen.getByRole('button', { name: 'Next' })
     expect(next).toHaveFocus()
     expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument()
     expect(screen.getByText('You guessed right! The actual frequency was 1220Hz.')).toBeInTheDocument()
-    expect(screen.queryByTestId('target-marker')).not.toBeInTheDocument()
+    expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(selector).toHaveAttribute('aria-disabled', 'true')
 
     // And the selector is locked
