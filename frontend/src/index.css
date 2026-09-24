@@ -21,5 +21,7 @@ body {
 }
 
 main {
+  max-width: 60rem;
+  margin-inline: auto;
   padding: 1rem;
 }
