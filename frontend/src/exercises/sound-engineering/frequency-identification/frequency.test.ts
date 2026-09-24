@@ -14,7 +14,7 @@ import {
   toFrequency,
   toPosition,
 } from './frequency'
-import { LEVELS } from '../intervals/interval'
+import { LEVELS } from '../../pitch/intervals/interval'
 
 describe('frequency', () => {
   afterEach(() => {

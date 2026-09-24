@@ -13,9 +13,9 @@ import {
   toFrequency,
   type Level,
 } from './interval'
-import shared from '../exercise.module.css'
+import shared from '../../exercise.module.css'
 import styles from './Intervals.module.css'
-import { playInterval, stopInterval } from '../../tone'
+import { playInterval, stopInterval } from '../../../tone'
 
 const OCTAVE_LABELS = ['+0', '+1 octave', '+2 octaves']
 const middleStopOf = (level: Level) => Math.floor((stopsOf(level).length - 1) / 2)

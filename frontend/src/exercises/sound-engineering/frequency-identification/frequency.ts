@@ -1,4 +1,4 @@
-import type { Level } from '../intervals/interval'
+import type { Level } from '../../pitch/intervals/interval'
 
 export const F_MIN = 100
 export const F_MAX = 15000

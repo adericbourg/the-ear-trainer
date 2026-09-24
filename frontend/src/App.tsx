@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
-import Chords from './exercises/chords/Chords'
-import FrequencyIdentification from './exercises/frequency-identification/FrequencyIdentification'
-import Intervals from './exercises/intervals/Intervals'
-import Panning from './exercises/panning/Panning'
+import Chords from './exercises/pitch/chords/Chords'
+import FrequencyIdentification from './exercises/sound-engineering/frequency-identification/FrequencyIdentification'
+import Intervals from './exercises/pitch/intervals/Intervals'
+import Panning from './exercises/sound-engineering/panning/Panning'
 import MenuBar from './MenuBar'
 import { categories, ExerciseId, exercises } from './exercises'
 

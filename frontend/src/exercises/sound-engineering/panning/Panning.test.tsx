@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Panning from './Panning'
-import { startNoise, stopTone } from '../../tone'
+import { startNoise, stopTone } from '../../../tone'
 
-vi.mock('../../tone', () => ({ startNoise: vi.fn(), stopTone: vi.fn() }))
+vi.mock('../../../tone', () => ({ startNoise: vi.fn(), stopTone: vi.fn() }))
 
 // Math.random() = 0.5 draws C (0), inside the initial Beginner selector (L25-R25); 0 draws L100, outside.
 function renderExercise(random = 0.5) {

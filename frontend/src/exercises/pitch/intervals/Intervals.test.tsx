@@ -2,9 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Intervals from './Intervals'
 import { toFrequency } from './interval'
-import { playInterval, stopInterval } from '../../tone'
+import { playInterval, stopInterval } from '../../../tone'
 
-vi.mock('../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
+vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
 
 // Math.random() = 0.5 draws a major 3rd (MIDI 64 to 68) in Beginner, and a 5th + 1 octave in Expert.
 function renderExercise() {

@@ -1,4 +1,4 @@
-import type { Level } from '../intervals/interval'
+import type { Level } from '../../pitch/intervals/interval'
 
 // -100 = hard left, 0 = center, 100 = hard right.
 export const PAN_MIN = -100

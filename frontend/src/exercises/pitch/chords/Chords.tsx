@@ -11,8 +11,8 @@ import {
   type Extension,
   type Triad,
 } from './chord'
-import shared from '../exercise.module.css'
-import { playInterval, stopInterval } from '../../tone'
+import shared from '../../exercise.module.css'
+import { playInterval, stopInterval } from '../../../tone'
 
 type ChoicesProps<T extends string | number> = {
   legend: string

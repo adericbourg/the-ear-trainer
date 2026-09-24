@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import FrequencyIdentification from './FrequencyIdentification'
-import { startTone, stopTone } from '../../tone'
+import { startTone, stopTone } from '../../../tone'
 
-vi.mock('../../tone', () => ({ startTone: vi.fn(), stopTone: vi.fn() }))
+vi.mock('../../../tone', () => ({ startTone: vi.fn(), stopTone: vi.fn() }))
 
 // Math.random() = 0.5 draws 1200 Hz, inside the initial Beginner selector (870-1700 Hz); 0 draws 100 Hz, outside.
 function renderExercise(random = 0.5) {

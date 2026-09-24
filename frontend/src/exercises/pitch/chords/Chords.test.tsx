@@ -2,9 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Chords from './Chords'
 import { toFrequency } from '../intervals/interval'
-import { playInterval, stopInterval } from '../../tone'
+import { playInterval, stopInterval } from '../../../tone'
 
-vi.mock('../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
+vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
 
 // Math.random() = 0.5 draws F♯ minor (MIDI 66 69 73) in Beginner, and an open F♯7/C♯ in Expert.
 function renderExercise() {

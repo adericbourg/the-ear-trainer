@@ -14,9 +14,9 @@ import {
   toPan,
   toPosition,
 } from './pan'
-import { LEVELS, type Level } from '../intervals/interval'
-import shared from '../exercise.module.css'
-import { startNoise, stopTone } from '../../tone'
+import { LEVELS, type Level } from '../../pitch/intervals/interval'
+import shared from '../../exercise.module.css'
+import { startNoise, stopTone } from '../../../tone'
 
 const percent = (position: number) => `${position * 100}%`
 

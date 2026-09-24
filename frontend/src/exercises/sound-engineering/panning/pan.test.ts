@@ -12,7 +12,7 @@ import {
   toPan,
   toPosition,
 } from './pan'
-import { LEVELS } from '../intervals/interval'
+import { LEVELS } from '../../pitch/intervals/interval'
 
 describe('pan', () => {
   afterEach(() => {

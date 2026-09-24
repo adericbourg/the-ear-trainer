@@ -17,9 +17,9 @@ import {
   toFrequency,
   toPosition,
 } from './frequency'
-import { LEVELS, type Level } from '../intervals/interval'
-import shared from '../exercise.module.css'
-import { startTone, stopTone } from '../../tone'
+import { LEVELS, type Level } from '../../pitch/intervals/interval'
+import shared from '../../exercise.module.css'
+import { startTone, stopTone } from '../../../tone'
 
 const percent = (position: number) => `${position * 100}%`
 
