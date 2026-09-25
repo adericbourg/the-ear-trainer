@@ -14,7 +14,7 @@ describe('App', () => {
     )
 
     // Then the home page is displayed
-    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'The Ear Trainer' })).toBeInTheDocument()
   })
 
   it('render_ofFrequencyIdentificationRoute_showsTheExerciseListedInTheMenu', () => {

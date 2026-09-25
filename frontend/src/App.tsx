@@ -4,6 +4,7 @@ import Chords from './exercises/pitch/chords/Chords'
 import FrequencyIdentification from './exercises/sound-engineering/frequency-identification/FrequencyIdentification'
 import Intervals from './exercises/pitch/intervals/Intervals'
 import Panning from './exercises/sound-engineering/panning/Panning'
+import Home from './Home'
 import MenuBar from './MenuBar'
 import Series, { type ExerciseProps } from './exercises/Series'
 import { categories, ExerciseId, exercises } from './exercises'
@@ -14,10 +15,6 @@ const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([
   [ExerciseId('frequency-identification'), FrequencyIdentification],
   [ExerciseId('panning'), Panning],
 ])
-
-function Home() {
-  return <h1>Welcome</h1>
-}
 
 function ExercisePage() {
   const { categoryId, exerciseId } = useParams()
@@ -33,7 +30,7 @@ function App() {
       <MenuBar categories={categories} exercises={exercises} />
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home categories={categories} exercises={exercises} />} />
           <Route path="/:categoryId/:exerciseId" element={<ExercisePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

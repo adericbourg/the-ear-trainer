@@ -9,8 +9,8 @@ const categories: Category[] = [
   { id: CategoryId('sound-engineering'), name: 'Sound engineering' },
 ]
 const exercises: Exercise[] = [
-  { id: ExerciseId('panning'), name: 'Panning', categoryId: CategoryId('sound-engineering') },
-  { id: ExerciseId('frequency'), name: 'Frequency identification', categoryId: CategoryId('sound-engineering') },
+  { id: ExerciseId('panning'), name: 'Panning', description: '', categoryId: CategoryId('sound-engineering') },
+  { id: ExerciseId('frequency'), name: 'Frequency identification', description: '', categoryId: CategoryId('sound-engineering') },
 ]
 
 // Compile-time guards (checked by `tsc -b`): ids are not interchangeable with plain strings nor with each other.

@@ -1,0 +1,44 @@
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 2px solid var(--content-fg);
+  border-top: 4px solid var(--accent);
+  border-radius: 0.5rem;
+}
+
+.card h3 {
+  margin: 0;
+}
+
+/* Pushes the Play link to the bottom so links line up across cards of a row. */
+.card p {
+  flex-grow: 1;
+}
+
+.play {
+  padding: 0.5rem 1rem;
+  color: var(--content-fg);
+  text-decoration: none;
+  border: 2px solid var(--content-fg);
+  border-radius: 0.5rem;
+}
+
+.play:hover {
+  background: var(--accent);
+}
+
+.play:focus-visible {
+  outline: 2px solid var(--content-fg);
+  outline-offset: 2px;
+}
