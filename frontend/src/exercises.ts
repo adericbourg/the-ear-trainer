@@ -31,6 +31,12 @@ export const exercises: readonly Exercise[] = [
     categoryId: CategoryId('pitch'),
   },
   {
+    id: ExerciseId('chord-inversions'),
+    name: 'Chord inversions',
+    description: 'Recognize which note of a chord is in the bass.',
+    categoryId: CategoryId('pitch'),
+  },
+  {
     id: ExerciseId('frequency-identification'),
     name: 'Frequency identification',
     description: 'Guess the frequency of a pure tone.',

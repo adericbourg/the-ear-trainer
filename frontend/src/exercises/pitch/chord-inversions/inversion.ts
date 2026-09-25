@@ -1,0 +1,23 @@
+import type { Level } from '../intervals/interval'
+import { chordsOf, inversionCountOf, isRootPositionOnly, questionOf, type Chord, type Question } from '../chords/chord'
+
+const INVERSIONS = ['root position', '1st inversion', '2nd inversion', '3rd inversion']
+const BASSES = ['root', '3rd', '5th', '7th']
+
+// The 9th of an add9 is never in the bass: its inversions would be the major triad's.
+export const poolOf = (level: Level) => chordsOf(level).filter((c) => !isRootPositionOnly(c.triad) && c.extension !== 'add9')
+
+const countOf = (chord: Chord) => inversionCountOf(chord.triad, chord.extension)
+
+// Level-wide, so that the buttons don't tell whether the chord is a 7th chord.
+export const inversionsOf = (level: Level) => INVERSIONS.slice(0, Math.max(...poolOf(level).map(countOf)))
+
+export function randomQuestion(level: Level): Question {
+  const pool = poolOf(level)
+  const chord = pool[Math.floor(Math.random() * pool.length)]!
+  return questionOf(level, chord, Math.floor(Math.random() * countOf(chord)))
+}
+
+export const solutionOf = (inversion: number) => `${INVERSIONS[inversion]} (${BASSES[inversion]} in the bass)`
+
+export const recapLabel = ({ chord, inversion }: Question) => `${chord.name}, ${INVERSIONS[inversion]}`

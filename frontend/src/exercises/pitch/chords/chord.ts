@@ -50,7 +50,7 @@ export const triadsOf = (level: Level) => TRIADS.filter((t) => chordsOf(level).s
 export const extensionsOf = (level: Level) => EXTENSIONS.filter((e) => chordsOf(level).some((c) => c.extension === e))
 
 // Their inversions are ambiguous: an inverted augmented triad is another augmented triad, an inverted sus4 a sus2.
-const isRootPositionOnly = (triad: Triad | undefined) => triad === 'augmented' || triad === 'sus2' || triad === 'sus4'
+export const isRootPositionOnly = (triad: Triad | undefined) => triad === 'augmented' || triad === 'sus2' || triad === 'sus4'
 
 // The 3rd inversion puts the 7th in the bass; the 9th is never in the bass.
 export const inversionCountOf = (triad: Triad | undefined, extension: Extension) =>
@@ -96,9 +96,7 @@ const lowestNote = (level: Level) => (isExpert(level) ? 36 : 48) // C2 or C3
 export type Question = { readonly chord: Chord; readonly inversion: number; readonly notes: readonly number[]; readonly label: string }
 
 // Notes are MIDI numbers, bass first.
-export function randomQuestion(level: Level): Question {
-  const chord = randomItem(chordsOf(level))
-  const inversion = isExpert(level) ? Math.floor(Math.random() * inversionCountOf(chord.triad, chord.extension)) : 0
+export function questionOf(level: Level, chord: Chord, inversion: number): Question {
   const tones = voicing(chord, inversion, isExpert(level))
   const root = randomItem(ROOTS)
   const low = lowestNote(level)
@@ -106,6 +104,12 @@ export function randomQuestion(level: Level): Question {
   const octaves = Math.floor((HIGHEST_NOTE - tones.at(-1)!.semitones - lowestRoot) / 12)
   const rootNote = lowestRoot + 12 * Math.floor(Math.random() * (octaves + 1))
   return { chord, inversion, notes: tones.map((t) => rootNote + t.semitones), label: labelOf(root, chord, tones) }
+}
+
+export function randomQuestion(level: Level): Question {
+  const chord = randomItem(chordsOf(level))
+  const inversion = isExpert(level) ? Math.floor(Math.random() * inversionCountOf(chord.triad, chord.extension)) : 0
+  return questionOf(level, chord, inversion)
 }
 
 const join = (words: readonly string[]) => words.join(' and ')
