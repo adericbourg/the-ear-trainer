@@ -37,4 +37,20 @@ describe('App', () => {
       '/sound-engineering/frequency-identification',
     )
   })
+
+  it('render_ofIntervalsRoute_showsTheSetupFirst', () => {
+    // Given the intervals route
+    // When the App is rendered
+    render(
+      <MemoryRouter initialEntries={['/pitch/intervals']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    // Then the setup is displayed, not the exercise
+    expect(screen.getByRole('heading', { level: 1, name: 'Intervals' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Free practice' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Scored series' })).toBeInTheDocument()
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+  })
 })

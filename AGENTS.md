@@ -33,6 +33,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 1. Add its category to `categories` in `frontend/src/exercises.ts` if it doesn't exist (`{ id: CategoryId('...'), name }`).
 2. Add `{ id: ExerciseId('...'), name, categoryId: CategoryId('...') }` to `exercises`.
 3. Put its component, test, styles and any exercise-specific logic in `frontend/src/exercises/<exercise-id>/` (kebab-case, matching its `ExerciseId`). Don't name a module like the component with only a case difference (`intervals.ts` next to `Intervals.tsx`): on case-insensitive file systems `./Intervals` resolves to the `.ts` file.
-4. Map its id to its page component in `exercisePages` (`frontend/src/App.tsx`); the page renders below the exercise name heading.
-5. Categories show up in the menu only when they have at least one exercise.
-6. Ids are used in the URL (`/<categoryId>/<exerciseId>`): use kebab-case.
+4. Its component takes `ExerciseProps` (`frontend/src/exercises/Series.tsx`) and only renders the question UI, for the given `level` (no level picker). On Check it reports `{ label, isHit }` through `onCheck` (label: the target, as in its feedback text); its Next button calls `onNext` and reads "See score" when `isLastQuestion` (then it doesn't start a new question). On mount it focuses its first answer control.
+5. Map its id to its component in `exercisePages` (`frontend/src/App.tsx`). `Series` renders it below the exercise name heading and owns the level choice, the mode (free practice or scored series of `SERIES_LENGTH` questions), progress, score and results.
+6. Categories show up in the menu only when they have at least one exercise.
+7. Ids are used in the URL (`/<categoryId>/<exerciseId>`): use kebab-case.

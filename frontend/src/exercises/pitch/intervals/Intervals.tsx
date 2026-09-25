@@ -4,7 +4,6 @@ import {
   answerName,
   isExpert,
   isHarmonic,
-  LEVELS,
   randomQuestion,
   simpleOf,
   stopName,
@@ -13,6 +12,7 @@ import {
   toFrequency,
   type Level,
 } from './interval'
+import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import styles from './Intervals.module.css'
 import { playInterval, stopInterval } from '../../../tone'
@@ -20,10 +20,9 @@ import { playInterval, stopInterval } from '../../../tone'
 const OCTAVE_LABELS = ['+0', '+1 octave', '+2 octaves']
 const middleStopOf = (level: Level) => Math.floor((stopsOf(level).length - 1) / 2)
 
-export default function Intervals() {
-  const [level, setLevel] = useState<Level>('beginner')
-  const [question, setQuestion] = useState(() => randomQuestion('beginner'))
-  const [stopIndex, setStopIndex] = useState(() => middleStopOf('beginner'))
+export default function Intervals({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
+  const [question, setQuestion] = useState(() => randomQuestion(level))
+  const [stopIndex, setStopIndex] = useState(() => middleStopOf(level))
   const [octaves, setOctaves] = useState(0)
   const [hasPlayed, setHasPlayed] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -41,22 +40,24 @@ export default function Intervals() {
   }
 
   const check = () => {
+    onCheck({ label: targetName(question.semitones), isHit: answer === question.semitones })
     flushSync(() => setIsChecked(true))
     nextRef.current?.focus()
   }
 
-  const reset = (newLevel: Level) => {
+  const reset = () => {
     stopInterval()
-    setLevel(newLevel)
-    setQuestion(randomQuestion(newLevel, newLevel === level ? question.semitones : undefined))
-    setStopIndex(middleStopOf(newLevel))
+    setQuestion(randomQuestion(level, question.semitones))
+    setStopIndex(middleStopOf(level))
     setOctaves(0)
     setHasPlayed(false)
     setIsChecked(false)
   }
 
   const next = () => {
-    flushSync(() => reset(level))
+    onNext()
+    if (isLastQuestion) return
+    flushSync(reset)
     selectorRef.current?.focus()
   }
 
@@ -78,6 +79,8 @@ export default function Intervals() {
   }, [])
 
   useEffect(() => stopInterval, [])
+
+  useEffect(() => selectorRef.current?.focus(), [])
 
   const onSelectorKeyDown = (event: KeyboardEvent) => {
     if (isChecked) return
@@ -119,16 +122,6 @@ export default function Intervals() {
 
   return (
     <div className={shared.exercise}>
-      <fieldset className={shared.choices}>
-        <legend>Level</legend>
-        {LEVELS.map(({ level: value, name }) => (
-          <label key={value} className={shared.choice}>
-            <input type="radio" name="level" value={value} checked={level === value} onChange={() => reset(value)} />
-            {name}
-          </label>
-        ))}
-      </fieldset>
-
       <p className={shared.instructions}>
         Click Play to hear the interval.
         <br />
@@ -204,7 +197,7 @@ export default function Intervals() {
       <div className={shared.result}>
         {isChecked ? (
           <button ref={nextRef} type="button" className={shared.button} data-result={result} onClick={next}>
-            Next
+            {isLastQuestion ? 'See score' : 'Next'}
           </button>
         ) : (
           <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>

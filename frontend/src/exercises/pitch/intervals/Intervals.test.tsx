@@ -1,16 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Intervals from './Intervals'
-import { toFrequency } from './interval'
+import { toFrequency, type Level } from './interval'
 import { playInterval, stopInterval } from '../../../tone'
 
 vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
 
 // Math.random() = 0.5 draws a major 3rd (MIDI 64 to 68) in Beginner, and a 5th + 1 octave in Expert.
-function renderExercise() {
+function renderExercise(level: Level = 'beginner', isLastQuestion = false) {
   vi.spyOn(Math, 'random').mockReturnValue(0.5)
-  render(<Intervals />)
+  const onCheck = vi.fn()
+  const onNext = vi.fn()
+  const { unmount } = render(<Intervals level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
   return {
+    onCheck,
+    onNext,
+    unmount,
     slider: screen.getByRole('slider', { name: 'Interval guess' }),
     play: () => screen.getByRole('button', { name: 'Play' }),
     check: () => screen.getByRole('button', { name: 'Check' }),
@@ -28,9 +33,10 @@ describe('Intervals', () => {
   })
 
   it('check_isEnabledOncePlayed', () => {
-    // Given a fresh Beginner exercise, on the middle stop
+    // Given a fresh Beginner exercise, focused on the middle stop
     const { slider, play, check } = renderExercise()
-    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(slider).toHaveFocus()
     expect(slider).toHaveAttribute('aria-valuetext', 'major 3rd')
     expect(play()).toHaveAttribute('aria-keyshortcuts', 'Space')
     expect(check()).toBeDisabled()
@@ -51,7 +57,7 @@ describe('Intervals', () => {
 
   it('slider_hasOneStopPerIntervalOfTheLevel', () => {
     // Given a Beginner exercise
-    const { slider } = renderExercise()
+    const { slider, unmount } = renderExercise()
 
     // When moving with the keyboard
     // Then each stop is a full interval name, without qualifier buttons
@@ -64,34 +70,36 @@ describe('Intervals', () => {
     fireEvent.keyDown(slider, { key: 'End' })
     expect(slider).toHaveAttribute('aria-valuetext', 'Octave')
     expect(screen.queryByRole('group', { name: 'Quality' })).not.toBeInTheDocument()
+    unmount()
 
-    // When switching to Intermediate
-    fireEvent.click(screen.getByRole('radio', { name: 'Intermediate' }))
+    // Given an Intermediate exercise
+    const { slider: intermediateSlider, unmount: unmountIntermediate } = renderExercise('intermediate')
 
     // Then the Tritone, major 6th and minor 7th follow the 4th
-    expect(slider).toHaveAttribute('aria-valuetext', '4th')
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
-    expect(slider).toHaveAttribute('aria-valuetext', 'Tritone')
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
-    expect(slider).toHaveAttribute('aria-valuetext', 'major 6th')
-    fireEvent.keyDown(slider, { key: 'ArrowDown' })
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
-    expect(slider).toHaveAttribute('aria-valuetext', 'minor 7th')
+    expect(intermediateSlider).toHaveAttribute('aria-valuetext', '4th')
+    fireEvent.keyDown(intermediateSlider, { key: 'ArrowRight' })
+    expect(intermediateSlider).toHaveAttribute('aria-valuetext', 'Tritone')
+    fireEvent.keyDown(intermediateSlider, { key: 'ArrowRight' })
+    fireEvent.keyDown(intermediateSlider, { key: 'ArrowRight' })
+    expect(intermediateSlider).toHaveAttribute('aria-valuetext', 'major 6th')
+    fireEvent.keyDown(intermediateSlider, { key: 'ArrowDown' })
+    fireEvent.keyDown(intermediateSlider, { key: 'ArrowRight' })
+    fireEvent.keyDown(intermediateSlider, { key: 'ArrowRight' })
+    expect(intermediateSlider).toHaveAttribute('aria-valuetext', 'minor 7th')
+    unmountIntermediate()
 
-    // When switching to Advanced
-    fireEvent.click(screen.getByRole('radio', { name: 'Advanced' }))
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
-    fireEvent.keyDown(slider, { key: 'ArrowRight' })
+    // Given an Advanced exercise
+    const { slider: advancedSlider } = renderExercise('advanced')
+    fireEvent.keyDown(advancedSlider, { key: 'Home' })
+    for (let i = 0; i < 7; i++) fireEvent.keyDown(advancedSlider, { key: 'ArrowRight' })
 
     // Then the minor 6th is a stop too
-    expect(slider).toHaveAttribute('aria-valuetext', 'minor 6th')
+    expect(advancedSlider).toHaveAttribute('aria-valuetext', 'minor 6th')
   })
 
   it('check_whenHit_locksControlsAndShowsSuccess', () => {
     // Given a played major 3rd, answered as a major 3rd
-    const { slider, play, check } = renderExercise()
+    const { slider, play, check, onCheck } = renderExercise()
     fireEvent.click(play())
 
     // When clicking Check
@@ -102,6 +110,7 @@ describe('Intervals', () => {
     expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument()
     expect(screen.getByText('You guessed right! It was a major 3rd.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'major 3rd', isHit: true })
 
     // And the slider is locked
     expect(slider).toHaveAttribute('aria-disabled', 'true')
@@ -115,7 +124,7 @@ describe('Intervals', () => {
 
   it('check_whenMissOnEnter_showsMarker', () => {
     // Given a played major 3rd, answered as a 4th
-    const { slider, play } = renderExercise()
+    const { slider, play, onCheck } = renderExercise()
     fireEvent.click(play())
     fireEvent.keyDown(slider, { key: 'ArrowRight' })
 
@@ -124,13 +133,14 @@ describe('Intervals', () => {
 
     // Then the result is a miss
     expect(screen.getByText('Missed! It was a major 3rd.')).toBeInTheDocument()
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'major 3rd', isHit: false })
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
   })
 
   it('next_startsANewRound', () => {
     // Given a checked miss, with the slider moved before check
-    const { slider, play } = renderExercise()
+    const { slider, play, onNext } = renderExercise()
     fireEvent.click(play())
     fireEvent.keyDown(slider, { key: 'End' })
     fireEvent.click(screen.getByRole('button', { name: 'Check' }))
@@ -138,7 +148,8 @@ describe('Intervals', () => {
     // When clicking Next
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
-    // Then audio stops and the round is reset
+    // Then the series is told, audio stops and the round is reset
+    expect(onNext).toHaveBeenCalledOnce()
     expect(stopInterval).toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled()
     expect(screen.queryByText(/Missed!/)).not.toBeInTheDocument()
@@ -154,21 +165,25 @@ describe('Intervals', () => {
     expect(screen.getByText('You guessed right! It was a 4th.')).toBeInTheDocument()
   })
 
-  it('levelChange_resetsTheRoundAndShowsOctavesOnlyInExpert', () => {
-    // Given a checked Beginner round
-    const { slider, play } = renderExercise()
+  it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {
+    // Given a checked last question
+    const { play, onNext } = renderExercise('beginner', true)
     fireEvent.click(play())
-    fireEvent.keyDown(slider, { key: 'Enter' })
-    expect(screen.getByText(/You guessed right!/)).toBeInTheDocument()
-    expect(screen.queryByText(/wider than an octave/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }))
 
-    // When switching to Expert
-    fireEvent.click(screen.getByRole('radio', { name: 'Expert' }))
+    // When clicking See score
+    fireEvent.click(screen.getByRole('button', { name: 'See score' }))
 
-    // Then audio stops, the round is reset, and octave buttons appear
-    expect(stopInterval).toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled()
-    expect(screen.queryByText(/You guessed right!/)).not.toBeInTheDocument()
+    // Then the series is told, and no new round starts
+    expect(onNext).toHaveBeenCalledOnce()
+    expect(screen.getByText('You guessed right! It was a major 3rd.')).toBeInTheDocument()
+  })
+
+  it('expert_showsOctavesAndPlaysHarmonically', () => {
+    // Given an Expert exercise
+    const { slider, play } = renderExercise('expert')
+
+    // Then octave buttons are shown
     expect(screen.getByText(/Use the octave buttons if the interval is wider than an octave\./)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '+0' })).toHaveAttribute('aria-pressed', 'true')
 
@@ -182,5 +197,11 @@ describe('Intervals', () => {
 
     // Then it is a hit
     expect(screen.getByText('You guessed right! It was a 5th + 1 octave.')).toBeInTheDocument()
+  })
+
+  it('beginner_hidesTheOctaves', () => {
+    renderExercise()
+    expect(screen.queryByText(/wider than an octave/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Octaves' })).not.toBeInTheDocument()
   })
 })
