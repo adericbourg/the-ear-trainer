@@ -50,8 +50,6 @@ export const stopName = (simple: number) => NAMES[simple - 1]!
 
 export const simpleOf = (semitones: number) => split(semitones).simple
 
-export const answerName = (simple: number, octaves: number) => stopName(simple) + octaveSuffix(octaves)
-
 export function targetName(semitones: number) {
   const { simple, octaves } = split(semitones)
   return (simple === 6 ? 'tritone (augmented 4th / diminished 5th)' : stopName(simple)) + octaveSuffix(octaves)

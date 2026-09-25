@@ -24,7 +24,9 @@
   cursor: pointer;
 }
 
-.button:disabled {
+/* Answer buttons stay focusable while locked, so they use aria-disabled; the result colors override it. */
+.button:disabled,
+.button[aria-disabled='true']:not([data-result]) {
   color: var(--disabled-fg);
   border-color: var(--disabled-fg);
   cursor: not-allowed;

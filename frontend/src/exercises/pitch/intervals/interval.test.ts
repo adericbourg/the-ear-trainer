@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { answerName, poolOf, randomQuestion, simpleOf, stopName, stopsOf, targetName, toFrequency } from './interval'
+import { poolOf, randomQuestion, simpleOf, stopName, stopsOf, targetName, toFrequency } from './interval'
 
 describe('interval', () => {
   afterEach(() => {
@@ -31,10 +31,7 @@ describe('interval', () => {
     expect(stopsOf('expert')).toHaveLength(12)
   })
 
-  it('answerName_andTargetName_useDisplayNames', () => {
-    expect(answerName(3, 1)).toBe('minor 3rd + 1 octave')
-    expect(answerName(6, 2)).toBe('Tritone + 2 octaves')
-    expect(answerName(5, 0)).toBe('4th')
+  it('targetName_usesDisplayNames', () => {
     expect(targetName(5)).toBe('4th')
     expect(targetName(12)).toBe('Octave')
     expect(targetName(15)).toBe('minor 3rd + 1 octave')

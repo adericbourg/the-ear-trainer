@@ -12,22 +12,6 @@
   background: var(--disabled-fg);
 }
 
-.box {
-  width: 3rem;
-  transform: translateX(-50%);
-}
-
-.stopLabel {
-  position: relative;
-  height: 1.5em;
-}
-
-.stopLabel span {
-  position: absolute;
-  white-space: nowrap;
-  transform: translateX(-50%);
-}
-
 .group {
   display: flex;
   flex-wrap: wrap;
