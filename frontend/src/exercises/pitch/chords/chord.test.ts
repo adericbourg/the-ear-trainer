@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { chordsOf, extensionsOf, feedback, inversionCountOf, labelOf, randomQuestion, triadsOf, voicing, type Question } from './chord'
+import { chordsOf, extensionsOf, feedback, inversionCountOf, labelOf, randomQuestion, targetLabel, triadsOf, voicing, type Question } from './chord'
 
 const chord = (name: string) => chordsOf('expert').find((c) => c.name === name)!
 const question = (name: string, inversion: number): Question => ({ chord: chord(name), inversion, notes: [], label: '' })
@@ -119,5 +119,12 @@ describe('chord', () => {
       isHit: true,
       text: 'You guessed right! It was a sus4.',
     })
+  })
+
+  it('targetLabel_namesTheChordAndTheInversionOnlyWhenAsked', () => {
+    expect(targetLabel('beginner', question('minor', 0))).toBe('minor')
+    expect(targetLabel('advanced', question('m7', 0))).toBe('m7 (minor + 7)')
+    expect(targetLabel('expert', question('maj7', 1))).toBe('maj7 (major + maj7), 1st inversion')
+    expect(targetLabel('expert', question('sus4', 0))).toBe('sus4')
   })
 })

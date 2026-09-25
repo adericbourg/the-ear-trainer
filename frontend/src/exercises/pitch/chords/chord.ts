@@ -111,17 +111,23 @@ export function randomQuestion(level: Level): Question {
 const join = (words: readonly string[]) => words.join(' and ')
 const INVERSION_NAMES = ['root position', '1st inversion', '2nd inversion', '3rd inversion']
 
+const isInversionAsked = (level: Level, chord: Chord) => isExpert(level) && !isRootPositionOnly(chord.triad)
+
+export function targetLabel(level: Level, { chord, inversion }: Question) {
+  const parts = chord.extension === 'none' ? '' : ` (${chord.triad} + ${chord.extension})`
+  const inverted = isInversionAsked(level, chord) ? `, ${INVERSION_NAMES[inversion]}` : ''
+  return `${chord.name}${parts}${inverted}`
+}
+
 // Only the groups shown in the level are graded; the inversion isn't asked for root-position-only chords.
-export function feedback(level: Level, { chord, inversion }: Question, answer: Answer) {
-  const isInversionAsked = isExpert(level) && !isRootPositionOnly(chord.triad)
+export function feedback(level: Level, question: Question, answer: Answer) {
+  const { chord, inversion } = question
   const groups: [string, boolean][] = [['triad', answer.triad === chord.triad]]
   if (extensionsOf(level).length > 1) groups.push(['extension', answer.extension === chord.extension])
-  if (isInversionAsked) groups.push(['inversion', answer.inversion === inversion])
+  if (isInversionAsked(level, chord)) groups.push(['inversion', answer.inversion === inversion])
 
   const article = /^[aeiou]/.test(chord.name) ? 'an' : 'a'
-  const parts = chord.extension === 'none' ? '' : ` (${chord.triad} + ${chord.extension})`
-  const inverted = isInversionAsked ? `, ${INVERSION_NAMES[inversion]}` : ''
-  const target = `It was ${article} ${chord.name}${parts}${inverted}.`
+  const target = `It was ${article} ${targetLabel(level, question)}.`
 
   const wrong = groups.filter(([, isRight]) => !isRight).map(([name]) => name)
   if (wrong.length === 0) return { isHit: true, text: `You guessed right! ${target}` }
