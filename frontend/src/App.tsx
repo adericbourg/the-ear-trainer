@@ -11,11 +11,11 @@ import { categories, ExerciseId, exercises } from './exercises'
 const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([
   [ExerciseId('intervals'), Intervals],
   [ExerciseId('chords'), Chords],
+  [ExerciseId('frequency-identification'), FrequencyIdentification],
 ])
 
 // ponytail: temporary, until every exercise goes through Series.
 const legacyPages = new Map<ExerciseId, () => ReactNode>([
-  [ExerciseId('frequency-identification'), () => <FrequencyIdentification />],
   [ExerciseId('panning'), () => <Panning />],
 ])
 

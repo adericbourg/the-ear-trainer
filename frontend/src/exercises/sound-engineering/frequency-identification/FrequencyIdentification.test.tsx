@@ -1,15 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Level } from '../../pitch/intervals/interval'
 import FrequencyIdentification from './FrequencyIdentification'
 import { startTone, stopTone } from '../../../tone'
 
 vi.mock('../../../tone', () => ({ startTone: vi.fn(), stopTone: vi.fn() }))
 
 // Math.random() = 0.5 draws 1200 Hz, inside the initial Beginner selector (870-1700 Hz); 0 draws 100 Hz, outside.
-function renderExercise(random = 0.5) {
+function renderExercise(random = 0.5, level: Level = 'beginner', isLastQuestion = false) {
   vi.spyOn(Math, 'random').mockReturnValue(random)
-  render(<FrequencyIdentification />)
+  const onCheck = vi.fn()
+  const onNext = vi.fn()
+  const { unmount } = render(<FrequencyIdentification level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
   return {
+    onCheck,
+    onNext,
+    unmount,
     selector: screen.getByRole('slider', { name: 'Frequency guess' }),
     play: () => screen.getByRole('button', { name: /^(Play|Pause)$/ }),
     check: () => screen.getByRole('button', { name: 'Check' }),
@@ -27,8 +33,10 @@ describe('FrequencyIdentification', () => {
   })
 
   it('playButton_togglesPlaybackAndEnablesCheck', () => {
-    // Given a fresh exercise
-    const { play, check } = renderExercise()
+    // Given a fresh exercise, focused on the selector
+    const { selector, play, check } = renderExercise()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(selector).toHaveFocus()
     expect(play()).toHaveAccessibleName('Play')
     expect(play()).toHaveAttribute('aria-keyshortcuts', 'Space')
     expect(check()).toBeDisabled()
@@ -81,8 +89,7 @@ describe('FrequencyIdentification', () => {
 
   it('selector_movesWithKeyboard', () => {
     // Given the Intermediate selector at its initial position
-    const { selector } = renderExercise()
-    fireEvent.click(screen.getByRole('radio', { name: 'Intermediate' }))
+    const { selector } = renderExercise(0.5, 'intermediate')
     expect(selector).toHaveAttribute('aria-valuetext', '1000 Hz to 1500 Hz')
 
     // When pressing PageUp, then Right arrow
@@ -106,7 +113,7 @@ describe('FrequencyIdentification', () => {
 
   it('check_whenHit_locksSelectorAndShowsSuccess', () => {
     // Given a played target inside the selector
-    const { selector, play, check } = renderExercise()
+    const { selector, play, check, onCheck } = renderExercise()
     fireEvent.click(play())
 
     // When clicking Check
@@ -119,6 +126,7 @@ describe('FrequencyIdentification', () => {
     expect(screen.getByText('You guessed right! The actual frequency was 1200Hz.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(selector).toHaveAttribute('aria-disabled', 'true')
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: '1200Hz', isHit: true })
 
     // And the selector is locked
     fireEvent.keyDown(selector, { key: 'PageUp' })
@@ -133,13 +141,14 @@ describe('FrequencyIdentification', () => {
 
   it('check_whenMissOnEnter_showsMarker', () => {
     // Given a played target outside the selector
-    const { selector, play } = renderExercise(0)
+    const { selector, play, onCheck } = renderExercise(0)
     fireEvent.click(play())
 
     // When pressing Enter on the selector
     fireEvent.keyDown(selector, { key: 'Enter' })
 
     // Then the result is a miss, with a marker
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: '100Hz', isHit: false })
     expect(screen.getByText('Missed! The actual frequency was 100Hz.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
@@ -147,7 +156,7 @@ describe('FrequencyIdentification', () => {
 
   it('next_startsANewRound', () => {
     // Given a checked miss, with playback running and the selector moved before check
-    const { selector, play } = renderExercise(0)
+    const { selector, play, onNext } = renderExercise(0)
     fireEvent.click(play())
     fireEvent.keyDown(selector, { key: 'End' })
     fireEvent.click(screen.getByRole('button', { name: 'Check' }))
@@ -156,7 +165,8 @@ describe('FrequencyIdentification', () => {
     // When clicking Next
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
-    // Then audio stops and the round is reset
+    // Then the series is told, audio stops and the round is reset
+    expect(onNext).toHaveBeenCalledOnce()
     expect(stopTone).toHaveBeenCalled()
     expect(play()).toHaveAccessibleName('Play')
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled()
@@ -171,27 +181,30 @@ describe('FrequencyIdentification', () => {
     fireEvent.click(play())
     expect(startTone).toHaveBeenLastCalledWith(1200)
   })
-  it('levelChange_resetsTheRoundAndNarrowsTheSelector', () => {
-    // Given a checked Beginner round, with playback running
-    const { selector, play, check } = renderExercise()
-    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
-    expect(selector).toHaveAttribute('aria-valuetext', '870 Hz to 1700 Hz')
+
+  it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {
+    // Given a checked last question
+    const { play, check, onNext } = renderExercise(0.5, 'beginner', true)
     fireEvent.click(play())
     fireEvent.click(check())
 
-    // When switching to Expert
-    fireEvent.click(screen.getByRole('radio', { name: 'Expert' }))
+    // When clicking See score
+    fireEvent.click(screen.getByRole('button', { name: 'See score' }))
 
-    // Then audio stops, the round is reset, and the selector spans a quarter octave
-    expect(stopTone).toHaveBeenCalled()
-    expect(play()).toHaveAccessibleName('Play')
-    expect(check()).toBeDisabled()
-    expect(screen.queryByText(/You guessed right!/)).not.toBeInTheDocument()
+    // Then the series is told, and no new round starts
+    expect(onNext).toHaveBeenCalledOnce()
+    expect(screen.getByText(/You guessed right!/)).toBeInTheDocument()
+  })
+
+  it('level_narrowsTheSelector', () => {
+    // Given an Expert exercise
+    const { selector, unmount } = renderExercise(0.5, 'expert')
+
+    // Then the selector spans a quarter octave
     expect(selector).toHaveAttribute('aria-valuetext', '1100 Hz to 1300 Hz')
-    expect(selector).not.toHaveAttribute('aria-disabled', 'true')
+    unmount()
 
     // And Advanced spans a third of an octave
-    fireEvent.click(screen.getByRole('radio', { name: 'Advanced' }))
-    expect(selector).toHaveAttribute('aria-valuetext', '1100 Hz to 1400 Hz')
+    expect(renderExercise(0.5, 'advanced').selector).toHaveAttribute('aria-valuetext', '1100 Hz to 1400 Hz')
   })
 })

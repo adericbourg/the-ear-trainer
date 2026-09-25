@@ -17,14 +17,13 @@ import {
   toFrequency,
   toPosition,
 } from './frequency'
-import { LEVELS, type Level } from '../../pitch/intervals/interval'
+import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import { startTone, stopTone } from '../../../tone'
 
 const percent = (position: number) => `${position * 100}%`
 
-export default function FrequencyIdentification() {
-  const [level, setLevel] = useState<Level>('beginner')
+export default function FrequencyIdentification({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
   const [target, setTarget] = useState(randomTarget)
   const [center, setCenter] = useState(INITIAL_CENTER)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -48,13 +47,13 @@ export default function FrequencyIdentification() {
   }
 
   const check = () => {
+    onCheck({ label: `${target}Hz`, isHit: isHit(level, target, center) })
     flushSync(() => setIsChecked(true))
     nextRef.current?.focus()
   }
 
-  const reset = (newLevel: Level) => {
+  const reset = () => {
     stopTone()
-    setLevel(newLevel)
     setIsPlaying(false)
     setTarget(randomTarget())
     setCenter(INITIAL_CENTER)
@@ -63,7 +62,9 @@ export default function FrequencyIdentification() {
   }
 
   const next = () => {
-    flushSync(() => reset(level))
+    onNext()
+    if (isLastQuestion) return
+    flushSync(reset)
     selectorRef.current?.focus()
   }
 
@@ -81,6 +82,8 @@ export default function FrequencyIdentification() {
   }, [])
 
   useEffect(() => stopTone, [])
+
+  useEffect(() => selectorRef.current?.focus(), [])
 
   const onSelectorKeyDown = (event: KeyboardEvent) => {
     if (isChecked) return
@@ -129,16 +132,6 @@ export default function FrequencyIdentification() {
 
   return (
     <div className={shared.exercise}>
-      <fieldset className={shared.choices}>
-        <legend>Level</legend>
-        {LEVELS.map(({ level: value, name }) => (
-          <label key={value} className={shared.choice}>
-            <input type="radio" name="level" value={value} checked={level === value} onChange={() => reset(value)} />
-            {name}
-          </label>
-        ))}
-      </fieldset>
-
       <p className={shared.instructions}>
         Click Play to hear a sound of a given frequency.
         <br />
@@ -210,7 +203,7 @@ export default function FrequencyIdentification() {
       <div className={shared.result}>
         {isChecked ? (
           <button ref={nextRef} type="button" className={shared.button} data-result={result} onClick={next}>
-            Next
+            {isLastQuestion ? 'See score' : 'Next'}
           </button>
         ) : (
           <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>

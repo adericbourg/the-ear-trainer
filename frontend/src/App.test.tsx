@@ -26,8 +26,13 @@ describe('App', () => {
       </MemoryRouter>,
     )
 
-    // Then the exercise is displayed
+    // Then the setup is displayed first
     expect(screen.getByRole('heading', { name: 'Frequency identification' })).toBeInTheDocument()
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Scored series' })).toBeInTheDocument()
+
+    // And the exercise once a mode is picked
+    fireEvent.click(screen.getByRole('button', { name: 'Free practice' }))
     expect(screen.getByRole('slider', { name: 'Frequency guess' })).toBeInTheDocument()
 
     // And it is listed in the menu
@@ -36,21 +41,5 @@ describe('App', () => {
       'href',
       '/sound-engineering/frequency-identification',
     )
-  })
-
-  it('render_ofIntervalsRoute_showsTheSetupFirst', () => {
-    // Given the intervals route
-    // When the App is rendered
-    render(
-      <MemoryRouter initialEntries={['/pitch/intervals']}>
-        <App />
-      </MemoryRouter>,
-    )
-
-    // Then the setup is displayed, not the exercise
-    expect(screen.getByRole('heading', { level: 1, name: 'Intervals' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Free practice' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Scored series' })).toBeInTheDocument()
-    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })
 })
