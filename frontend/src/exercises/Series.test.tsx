@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import Series, { type ExerciseProps } from './Series'
 
 // Answers a question in one click: Check then Next.
-function FakeExercise({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
+function FakeExercise({ level, isLastQuestion, isAutoPlay, onCheck, onNext }: ExerciseProps) {
   const answer = (isHit: boolean) => {
     onCheck({ label: isHit ? 'Easy one' : 'Hard one', isHit })
     onNext()
@@ -12,6 +12,7 @@ function FakeExercise({ level, isLastQuestion, onCheck, onNext }: ExerciseProps)
     <>
       <p>Playing {level}</p>
       {isLastQuestion && <p>Last question</p>}
+      {isAutoPlay && <p>Auto-playing</p>}
       <button type="button" onClick={() => answer(true)}>
         Hit
       </button>
@@ -34,6 +35,7 @@ describe('Series', () => {
     // Then the level and mode are asked, and the exercise isn't rendered
     expect(screen.getByRole('heading', { level: 1, name: 'Fake' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Auto-play' })).not.toBeChecked()
     expect(screen.getByRole('button', { name: 'Free practice' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Scored series' })).toBeInTheDocument()
     expect(screen.getByText('A scored series has 10 questions.')).toBeInTheDocument()
@@ -52,6 +54,7 @@ describe('Series', () => {
     // Then the exercise plays the chosen level, without score nor progress
     expect(screen.getByText('Playing advanced')).toBeInTheDocument()
     expect(screen.getByText('Level: Advanced')).toBeInTheDocument()
+    expect(screen.queryByText('Auto-playing')).not.toBeInTheDocument()
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     expect(score()).not.toBeInTheDocument()
     expect(screen.queryByText(/^Question/)).not.toBeInTheDocument()
@@ -74,15 +77,17 @@ describe('Series', () => {
   })
 
   it('scoredSeries_scoresTenQuestionsThenShowsTheResults', () => {
-    // Given the Intermediate level
+    // Given the Intermediate level, with auto-play
     renderSeries()
     fireEvent.click(screen.getByRole('radio', { name: 'Intermediate' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Auto-play' }))
 
     // When starting a scored series
     click('Scored series')
 
-    // Then the exercise plays the chosen level, with no answer yet
+    // Then the exercise plays the chosen level in auto-play, with no answer yet
     expect(screen.getByText('Playing intermediate')).toBeInTheDocument()
+    expect(screen.getByText('Auto-playing')).toBeInTheDocument()
     expect(screen.getByText('Level: Intermediate')).toBeInTheDocument()
     expect(score()).toHaveTextContent('Score: –')
     expect(screen.getByText('Question 1 of 10')).toBeInTheDocument()
@@ -114,8 +119,9 @@ describe('Series', () => {
     // When starting a new series
     click('New series')
 
-    // Then the setup is back, with the level kept
+    // Then the setup is back, with the level and auto-play kept
     expect(screen.getByRole('radio', { name: 'Intermediate' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Auto-play' })).toBeChecked()
     expect(score()).not.toBeInTheDocument()
   })
 

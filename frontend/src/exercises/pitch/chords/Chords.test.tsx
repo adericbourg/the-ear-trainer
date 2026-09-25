@@ -7,11 +7,11 @@ import { playInterval, stopInterval } from '../../../tone'
 vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
 
 // Math.random() = 0.5 draws F♯ minor (MIDI 66 69 73) in Beginner, and an open F♯7/C♯ in Expert.
-function renderExercise(level: Level = 'beginner', isLastQuestion = false) {
+function renderExercise(level: Level = 'beginner', isLastQuestion = false, isAutoPlay = false) {
   vi.spyOn(Math, 'random').mockReturnValue(0.5)
   const onCheck = vi.fn()
   const onNext = vi.fn()
-  render(<Chords level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
+  render(<Chords level={level} isLastQuestion={isLastQuestion} isAutoPlay={isAutoPlay} onCheck={onCheck} onNext={onNext} />)
   return {
     onCheck,
     onNext,
@@ -129,6 +129,22 @@ describe('Chords', () => {
     expect(screen.getByText(/You guessed right! It was a dominant 7 \(major \+ 7\), 2nd inversion\./)).toBeInTheDocument()
     expect(screen.getByText(/F♯7\/C♯: C♯ F♯ A♯ E/)).toBeInTheDocument()
     expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'dominant 7 (major + 7), 2nd inversion', isHit: true })
+  })
+
+  it('autoPlay_playsEachNewQuestion', () => {
+    // Given / When an auto-play exercise
+    const { check } = renderExercise('beginner', false, true)
+
+    // Then the chord plays without clicking Play
+    expect(playInterval).toHaveBeenCalledExactlyOnceWith([toFrequency(66), toFrequency(69), toFrequency(73)], false)
+
+    // When checking then clicking Next
+    fireEvent.click(screen.getByRole('radio', { name: 'major' }))
+    fireEvent.click(check())
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    // Then the new chord plays too
+    expect(playInterval).toHaveBeenCalledTimes(2)
   })
 
   it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {

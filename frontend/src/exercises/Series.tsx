@@ -7,6 +7,8 @@ import shared from './exercise.module.css'
 export type ExerciseProps = {
   readonly level: Level
   readonly isLastQuestion: boolean
+  // Plays each new question without waiting for the Play button.
+  readonly isAutoPlay: boolean
   readonly onCheck: (answer: Answer) => void
   readonly onNext: () => void
 }
@@ -20,6 +22,7 @@ const doNothing = () => {}
 export default function Series({ exerciseName, Exercise }: Props) {
   const [phase, setPhase] = useState<Phase>('setup')
   const [level, setLevel] = useState<Level>('beginner')
+  const [isAutoPlay, setIsAutoPlay] = useState(false)
   const [answers, setAnswers] = useState<readonly Answer[]>([])
   // Moves on Next, not on Check: the feedback of a question shows under its own number.
   const [questionNumber, setQuestionNumber] = useState(1)
@@ -73,6 +76,9 @@ export default function Series({ exerciseName, Exercise }: Props) {
               </label>
             ))}
           </fieldset>
+          <label>
+            <input type="checkbox" checked={isAutoPlay} onChange={(event) => setIsAutoPlay(event.target.checked)} /> Auto-play
+          </label>
           <div className={shared.result}>
             <button type="button" className={shared.button} onClick={() => start('practice')}>
               Free practice
@@ -97,6 +103,7 @@ export default function Series({ exerciseName, Exercise }: Props) {
           <Exercise
             level={level}
             isLastQuestion={isSeries && questionNumber === SERIES_LENGTH}
+            isAutoPlay={isAutoPlay}
             onCheck={isSeries ? (answer) => setAnswers((previous) => [...previous, answer]) : doNothing}
             onNext={isSeries ? onNext : doNothing}
           />

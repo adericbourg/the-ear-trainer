@@ -23,11 +23,11 @@ import { startTone, stopTone } from '../../../tone'
 
 const percent = (position: number) => `${position * 100}%`
 
-export default function FrequencyIdentification({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
+export default function FrequencyIdentification({ level, isLastQuestion, isAutoPlay, onCheck, onNext }: ExerciseProps) {
   const [target, setTarget] = useState(randomTarget)
   const [center, setCenter] = useState(INITIAL_CENTER)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [hasPlayed, setHasPlayed] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(isAutoPlay)
+  const [hasPlayed, setHasPlayed] = useState(isAutoPlay)
   const [isChecked, setIsChecked] = useState(false)
   const trackRef = useRef<HTMLDivElement>(null)
   const selectorRef = useRef<HTMLDivElement>(null)
@@ -54,11 +54,13 @@ export default function FrequencyIdentification({ level, isLastQuestion, onCheck
 
   const reset = () => {
     stopTone()
-    setIsPlaying(false)
-    setTarget(randomTarget())
+    setIsPlaying(isAutoPlay)
+    const newTarget = randomTarget()
+    setTarget(newTarget)
     setCenter(INITIAL_CENTER)
-    setHasPlayed(false)
+    setHasPlayed(isAutoPlay)
     setIsChecked(false)
+    if (isAutoPlay) startTone(newTarget)
   }
 
   const next = () => {
@@ -82,6 +84,13 @@ export default function FrequencyIdentification({ level, isLastQuestion, onCheck
   }, [])
 
   useEffect(() => stopTone, [])
+
+  // Next plays from reset; the first question plays on mount.
+  const autoPlay = useEffectEvent(() => {
+    if (isAutoPlay) startTone(target)
+  })
+
+  useEffect(() => autoPlay(), [])
 
   useEffect(() => selectorRef.current?.focus(), [])
 

@@ -7,11 +7,11 @@ import { startTone, stopTone } from '../../../tone'
 vi.mock('../../../tone', () => ({ startTone: vi.fn(), stopTone: vi.fn() }))
 
 // Math.random() = 0.5 draws 1200 Hz, inside the initial Beginner selector (870-1700 Hz); 0 draws 100 Hz, outside.
-function renderExercise(random = 0.5, level: Level = 'beginner', isLastQuestion = false) {
+function renderExercise(random = 0.5, level: Level = 'beginner', isLastQuestion = false, isAutoPlay = false) {
   vi.spyOn(Math, 'random').mockReturnValue(random)
   const onCheck = vi.fn()
   const onNext = vi.fn()
-  const { unmount } = render(<FrequencyIdentification level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
+  const { unmount } = render(<FrequencyIdentification level={level} isLastQuestion={isLastQuestion} isAutoPlay={isAutoPlay} onCheck={onCheck} onNext={onNext} />)
   return {
     onCheck,
     onNext,
@@ -180,6 +180,24 @@ describe('FrequencyIdentification', () => {
     // And the new target is played next
     fireEvent.click(play())
     expect(startTone).toHaveBeenLastCalledWith(1200)
+  })
+
+  it('autoPlay_playsEachNewQuestion', () => {
+    // Given / When an auto-play exercise
+    const { play, check } = renderExercise(0.5, 'beginner', false, true)
+
+    // Then the tone plays without clicking Play
+    expect(startTone).toHaveBeenCalledExactlyOnceWith(1200)
+    expect(play()).toHaveAccessibleName('Pause')
+    expect(check()).toBeEnabled()
+
+    // When checking then clicking Next
+    fireEvent.click(check())
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    // Then the new tone plays too
+    expect(startTone).toHaveBeenCalledTimes(2)
+    expect(play()).toHaveAccessibleName('Pause')
   })
 
   it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {

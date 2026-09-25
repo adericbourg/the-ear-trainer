@@ -20,11 +20,11 @@ import { playInterval, stopInterval } from '../../../tone'
 const OCTAVE_LABELS = ['+0', '+1 octave', '+2 octaves']
 const middleStopOf = (level: Level) => Math.floor((stopsOf(level).length - 1) / 2)
 
-export default function Intervals({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
+export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, onNext }: ExerciseProps) {
   const [question, setQuestion] = useState(() => randomQuestion(level))
   const [stopIndex, setStopIndex] = useState(() => middleStopOf(level))
   const [octaves, setOctaves] = useState(0)
-  const [hasPlayed, setHasPlayed] = useState(false)
+  const [hasPlayed, setHasPlayed] = useState(isAutoPlay)
   const [isChecked, setIsChecked] = useState(false)
   const trackRef = useRef<HTMLDivElement>(null)
   const selectorRef = useRef<HTMLDivElement>(null)
@@ -47,11 +47,13 @@ export default function Intervals({ level, isLastQuestion, onCheck, onNext }: Ex
 
   const reset = () => {
     stopInterval()
-    setQuestion(randomQuestion(level, question.semitones))
+    const newQuestion = randomQuestion(level, question.semitones)
+    setQuestion(newQuestion)
     setStopIndex(middleStopOf(level))
     setOctaves(0)
-    setHasPlayed(false)
+    setHasPlayed(isAutoPlay)
     setIsChecked(false)
+    if (isAutoPlay) playInterval(newQuestion.notes.map(toFrequency), isHarmonic(level))
   }
 
   const next = () => {
@@ -79,6 +81,13 @@ export default function Intervals({ level, isLastQuestion, onCheck, onNext }: Ex
   }, [])
 
   useEffect(() => stopInterval, [])
+
+  // Next plays from reset; the first question plays on mount.
+  const autoPlay = useEffectEvent(() => {
+    if (isAutoPlay) playInterval(question.notes.map(toFrequency), isHarmonic(level))
+  })
+
+  useEffect(() => autoPlay(), [])
 
   useEffect(() => selectorRef.current?.focus(), [])
 

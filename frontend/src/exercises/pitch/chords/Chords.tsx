@@ -48,12 +48,12 @@ function Choices<T extends string | number>({ legend, name, options, value, onCh
   )
 }
 
-export default function Chords({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
+export default function Chords({ level, isLastQuestion, isAutoPlay, onCheck, onNext }: ExerciseProps) {
   const [question, setQuestion] = useState(() => randomQuestion(level))
   const [triad, setTriad] = useState<Triad>()
   const [extension, setExtension] = useState<Extension>('none')
   const [inversion, setInversion] = useState(0)
-  const [hasPlayed, setHasPlayed] = useState(false)
+  const [hasPlayed, setHasPlayed] = useState(isAutoPlay)
   const [isChecked, setIsChecked] = useState(false)
   const triadsRef = useRef<HTMLFieldSetElement>(null)
   const nextRef = useRef<HTMLButtonElement>(null)
@@ -74,12 +74,14 @@ export default function Chords({ level, isLastQuestion, onCheck, onNext }: Exerc
 
   const reset = () => {
     stopInterval()
-    setQuestion(randomQuestion(level))
+    const newQuestion = randomQuestion(level)
+    setQuestion(newQuestion)
     setTriad(undefined)
     setExtension('none')
     setInversion(0)
-    setHasPlayed(false)
+    setHasPlayed(isAutoPlay)
     setIsChecked(false)
+    if (isAutoPlay) playInterval(newQuestion.notes.map(toFrequency), isHarmonic(level))
   }
 
   const focusFirstTriad = () => triadsRef.current?.querySelector('input')?.focus()
@@ -112,6 +114,13 @@ export default function Chords({ level, isLastQuestion, onCheck, onNext }: Exerc
   }, [])
 
   useEffect(() => stopInterval, [])
+
+  // Next plays from reset; the first question plays on mount.
+  const autoPlay = useEffectEvent(() => {
+    if (isAutoPlay) playInterval(question.notes.map(toFrequency), isHarmonic(level))
+  })
+
+  useEffect(() => autoPlay(), [])
 
   useEffect(focusFirstTriad, [])
 

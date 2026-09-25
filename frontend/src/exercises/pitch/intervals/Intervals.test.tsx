@@ -7,11 +7,11 @@ import { playInterval, stopInterval } from '../../../tone'
 vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
 
 // Math.random() = 0.5 draws a major 3rd (MIDI 64 to 68) in Beginner, and a 5th + 1 octave in Expert.
-function renderExercise(level: Level = 'beginner', isLastQuestion = false) {
+function renderExercise(level: Level = 'beginner', isLastQuestion = false, isAutoPlay = false) {
   vi.spyOn(Math, 'random').mockReturnValue(0.5)
   const onCheck = vi.fn()
   const onNext = vi.fn()
-  const { unmount } = render(<Intervals level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
+  const { unmount } = render(<Intervals level={level} isLastQuestion={isLastQuestion} isAutoPlay={isAutoPlay} onCheck={onCheck} onNext={onNext} />)
   return {
     onCheck,
     onNext,
@@ -163,6 +163,23 @@ describe('Intervals', () => {
     fireEvent.keyDown(slider, { key: 'ArrowRight' })
     fireEvent.keyDown(slider, { key: 'Enter' })
     expect(screen.getByText('You guessed right! It was a 4th.')).toBeInTheDocument()
+  })
+
+  it('autoPlay_playsEachNewQuestion', () => {
+    // Given / When an auto-play exercise
+    const { slider, check } = renderExercise('beginner', false, true)
+
+    // Then the interval plays without clicking Play
+    expect(playInterval).toHaveBeenCalledExactlyOnceWith([toFrequency(64), toFrequency(68)], false)
+    expect(check()).toBeEnabled()
+
+    // When checking then clicking Next
+    fireEvent.keyDown(slider, { key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    // Then the new interval plays too
+    expect(playInterval).toHaveBeenCalledTimes(2)
+    expect(check()).toBeEnabled()
   })
 
   it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {
