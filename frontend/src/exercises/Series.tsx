@@ -76,9 +76,6 @@ export default function Series({ exerciseName, Exercise }: Props) {
               </label>
             ))}
           </fieldset>
-          <label>
-            <input type="checkbox" checked={isAutoPlay} onChange={(event) => setIsAutoPlay(event.target.checked)} /> Auto-play
-          </label>
           <div className={shared.result}>
             <button type="button" className={shared.button} onClick={() => start('practice')}>
               Free practice
@@ -96,6 +93,9 @@ export default function Series({ exerciseName, Exercise }: Props) {
           <div className={shared.result}>
             {isSeries && <p>Question {questionNumber} of {SERIES_LENGTH}</p>}
             <p>Level: {levelName(level)}</p>
+            <label>
+              <input type="checkbox" checked={isAutoPlay} onChange={(event) => setIsAutoPlay(event.target.checked)} /> Auto-play
+            </label>
             <button type="button" className={shared.button} onClick={backToSetup}>
               {isSeries ? 'Abandon series' : 'Stop'}
             </button>
