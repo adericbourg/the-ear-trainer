@@ -8,12 +8,14 @@ import MenuBar from './MenuBar'
 import Series, { type ExerciseProps } from './exercises/Series'
 import { categories, ExerciseId, exercises } from './exercises'
 
-const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([[ExerciseId('intervals'), Intervals]])
+const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([
+  [ExerciseId('intervals'), Intervals],
+  [ExerciseId('chords'), Chords],
+])
 
 // ponytail: temporary, until every exercise goes through Series.
 const legacyPages = new Map<ExerciseId, () => ReactNode>([
   [ExerciseId('frequency-identification'), () => <FrequencyIdentification />],
-  [ExerciseId('chords'), () => <Chords />],
   [ExerciseId('panning'), () => <Panning />],
 ])
 

@@ -1,16 +1,18 @@
 import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { flushSync } from 'react-dom'
-import { isExpert, isHarmonic, LEVELS, toFrequency, type Level } from '../intervals/interval'
+import { isExpert, isHarmonic, toFrequency } from '../intervals/interval'
 import {
   extensionsOf,
   feedback,
   INVERSIONS,
   inversionCountOf,
   randomQuestion,
+  targetLabel,
   triadsOf,
   type Extension,
   type Triad,
 } from './chord'
+import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import { playInterval, stopInterval } from '../../../tone'
 
@@ -46,9 +48,8 @@ function Choices<T extends string | number>({ legend, name, options, value, onCh
   )
 }
 
-export default function Chords() {
-  const [level, setLevel] = useState<Level>('beginner')
-  const [question, setQuestion] = useState(() => randomQuestion('beginner'))
+export default function Chords({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
+  const [question, setQuestion] = useState(() => randomQuestion(level))
   const [triad, setTriad] = useState<Triad>()
   const [extension, setExtension] = useState<Extension>('none')
   const [inversion, setInversion] = useState(0)
@@ -66,14 +67,14 @@ export default function Chords() {
   }
 
   const check = () => {
+    onCheck({ label: targetLabel(level, question), isHit: feedback(level, question, { triad: triad!, extension, inversion }).isHit })
     flushSync(() => setIsChecked(true))
     nextRef.current?.focus()
   }
 
-  const reset = (newLevel: Level) => {
+  const reset = () => {
     stopInterval()
-    setLevel(newLevel)
-    setQuestion(randomQuestion(newLevel))
+    setQuestion(randomQuestion(level))
     setTriad(undefined)
     setExtension('none')
     setInversion(0)
@@ -81,9 +82,13 @@ export default function Chords() {
     setIsChecked(false)
   }
 
+  const focusFirstTriad = () => triadsRef.current?.querySelector('input')?.focus()
+
   const next = () => {
-    flushSync(() => reset(level))
-    triadsRef.current?.querySelector('input')?.focus()
+    onNext()
+    if (isLastQuestion) return
+    flushSync(reset)
+    focusFirstTriad()
   }
 
   // Falls back to root position when the picked inversion doesn't exist for the new chord.
@@ -108,6 +113,8 @@ export default function Chords() {
 
   useEffect(() => stopInterval, [])
 
+  useEffect(focusFirstTriad, [])
+
   const isCheckable = hasPlayed && triad !== undefined
 
   const onAnswerKeyDown = (event: KeyboardEvent) => {
@@ -118,14 +125,6 @@ export default function Chords() {
 
   return (
     <div className={shared.exercise}>
-      <Choices
-        legend="Level"
-        name="level"
-        options={LEVELS.map(({ level: value, name }) => ({ value, label: name }))}
-        value={level}
-        onChange={reset}
-      />
-
       <p className={shared.instructions}>
         Click Play to hear the chord.
         <br />
@@ -177,7 +176,7 @@ export default function Chords() {
       <div className={shared.result}>
         {isChecked ? (
           <button ref={nextRef} type="button" className={shared.button} data-result={result?.isHit ? 'hit' : 'miss'} onClick={next}>
-            Next
+            {isLastQuestion ? 'See score' : 'Next'}
           </button>
         ) : (
           <button type="button" className={shared.button} disabled={!isCheckable} onClick={check}>

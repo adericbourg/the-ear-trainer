@@ -1,16 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Chords from './Chords'
-import { toFrequency } from '../intervals/interval'
+import { toFrequency, type Level } from '../intervals/interval'
 import { playInterval, stopInterval } from '../../../tone'
 
 vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))
 
 // Math.random() = 0.5 draws F♯ minor (MIDI 66 69 73) in Beginner, and an open F♯7/C♯ in Expert.
-function renderExercise() {
+function renderExercise(level: Level = 'beginner', isLastQuestion = false) {
   vi.spyOn(Math, 'random').mockReturnValue(0.5)
-  render(<Chords />)
+  const onCheck = vi.fn()
+  const onNext = vi.fn()
+  render(<Chords level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
   return {
+    onCheck,
+    onNext,
     play: () => screen.getByRole('button', { name: 'Play' }),
     check: () => screen.getByRole('button', { name: 'Check' }),
   }
@@ -27,9 +31,10 @@ describe('Chords', () => {
   })
 
   it('check_isEnabledOncePlayed', () => {
-    // Given a fresh Beginner exercise
+    // Given a fresh Beginner exercise, focused on the first triad
     const { play, check } = renderExercise()
-    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
+    expect(screen.queryByRole('group', { name: 'Level' })).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'major' })).toHaveFocus()
     expect(check()).toBeDisabled()
 
     // When clicking Play
@@ -50,13 +55,13 @@ describe('Chords', () => {
 
   it('check_whenHitOnEnter_locksAnswerAndShowsTheChord', () => {
     // Given a played Beginner chord: only the major and minor triads are asked
-    const { play } = renderExercise()
+    const { play, onCheck } = renderExercise()
     fireEvent.click(play())
     expect(screen.getByRole('group', { name: 'Triad' })).toBeInTheDocument()
     expect(screen.getAllByRole('radio', { name: /^(major|minor)$/ })).toHaveLength(2)
     expect(screen.queryByRole('group', { name: 'Extension' })).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Inversion' })).not.toBeInTheDocument()
-    expect(screen.getAllByRole('radio', { checked: true })).toEqual([screen.getByRole('radio', { name: 'Beginner' })])
+    expect(screen.queryAllByRole('radio', { checked: true })).toEqual([])
 
     // When answering minor and pressing Enter
     const minor = screen.getByRole('radio', { name: 'minor' })
@@ -68,21 +73,23 @@ describe('Chords', () => {
     expect(screen.getByText(/F♯m: F♯ A C♯/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
     expect(minor).toBeDisabled()
-    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeEnabled()
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'minor', isHit: true })
   })
 
   it('next_startsANewRound', () => {
     // Given a checked miss
-    const { play, check } = renderExercise()
+    const { play, check, onCheck, onNext } = renderExercise()
     fireEvent.click(play())
     fireEvent.click(screen.getByRole('radio', { name: 'major' }))
     fireEvent.click(check())
     expect(screen.getByText(/Wrong triad\. It was a minor\./)).toBeInTheDocument()
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'minor', isHit: false })
 
     // When clicking Next
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
-    // Then audio stops and the round is reset
+    // Then the series is told, audio stops and the round is reset
+    expect(onNext).toHaveBeenCalledOnce()
     expect(stopInterval).toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled()
     expect(screen.queryByText(/Wrong triad/)).not.toBeInTheDocument()
@@ -93,8 +100,7 @@ describe('Chords', () => {
 
   it('expert_asksExtensionAndInversion', () => {
     // Given an Expert exercise
-    const { play, check } = renderExercise()
-    fireEvent.click(screen.getByRole('radio', { name: 'Expert' }))
+    const { play, check, onCheck } = renderExercise('expert')
     expect(screen.getByRole('radio', { name: 'sus4' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'add9' })).toBeInTheDocument()
 
@@ -122,5 +128,21 @@ describe('Chords', () => {
     // Then it is a hit
     expect(screen.getByText(/You guessed right! It was a dominant 7 \(major \+ 7\), 2nd inversion\./)).toBeInTheDocument()
     expect(screen.getByText(/F♯7\/C♯: C♯ F♯ A♯ E/)).toBeInTheDocument()
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'dominant 7 (major + 7), 2nd inversion', isHit: true })
+  })
+
+  it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {
+    // Given a checked last question
+    const { play, check, onNext } = renderExercise('beginner', true)
+    fireEvent.click(play())
+    fireEvent.click(screen.getByRole('radio', { name: 'minor' }))
+    fireEvent.click(check())
+
+    // When clicking See score
+    fireEvent.click(screen.getByRole('button', { name: 'See score' }))
+
+    // Then the series is told, and no new round starts
+    expect(onNext).toHaveBeenCalledOnce()
+    expect(screen.getByText(/You guessed right! It was a minor\./)).toBeInTheDocument()
   })
 })
