@@ -25,9 +25,9 @@ export const exercises: readonly Exercise[] = [
     categoryId: CategoryId('pitch'),
   },
   {
-    id: ExerciseId('chords'),
-    name: 'Chords',
-    description: "Recognize a chord's quality, extensions and inversion.",
+    id: ExerciseId('chord-types'),
+    name: 'Chord types',
+    description: "Recognize a chord's type: major, minor, seventh chords and more.",
     categoryId: CategoryId('pitch'),
   },
   {

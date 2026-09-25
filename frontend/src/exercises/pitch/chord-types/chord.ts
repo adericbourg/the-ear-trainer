@@ -3,11 +3,6 @@ import { isExpert, LEVELS, type Level } from '../intervals/interval'
 export type Triad = 'major' | 'minor' | 'diminished' | 'augmented' | 'sus2' | 'sus4'
 export type Extension = 'none' | '7' | 'maj7' | 'add9'
 export type Chord = { readonly name: string; readonly symbol: string; readonly triad: Triad; readonly extension: Extension }
-export type Answer = { readonly triad: Triad; readonly extension: Extension; readonly inversion: number }
-
-export const TRIADS: readonly Triad[] = ['major', 'minor', 'diminished', 'augmented', 'sus2', 'sus4']
-export const EXTENSIONS: readonly Extension[] = ['none', '7', 'maj7', 'add9']
-export const INVERSIONS = ['root position', '1st', '2nd', '3rd']
 
 // A tone is a chord note above the root: letters (a third is 2 letters above the root) and semitones.
 type Tone = { readonly steps: number; readonly semitones: number }
@@ -46,14 +41,22 @@ const CHORDS: readonly (Chord & { readonly since: Level })[] = [
 const rank = (level: Level) => LEVELS.findIndex((l) => l.level === level)
 
 export const chordsOf = (level: Level): readonly Chord[] => CHORDS.filter((c) => rank(c.since) <= rank(level))
-export const triadsOf = (level: Level) => TRIADS.filter((t) => chordsOf(level).some((c) => c.triad === t))
-export const extensionsOf = (level: Level) => EXTENSIONS.filter((e) => chordsOf(level).some((c) => c.extension === e))
+
+const MAX_CHOICES = 5
+
+// The chord and random others of the level, in table order so that a button's position gives nothing away.
+export function choicesOf(level: Level, chord: Chord) {
+  const others = chordsOf(level).filter((c) => c !== chord)
+  const picked = new Set([chord])
+  while (picked.size < MAX_CHOICES && others.length > 0) picked.add(others.splice(Math.floor(Math.random() * others.length), 1)[0]!)
+  return chordsOf(level).filter((c) => picked.has(c))
+}
 
 // Their inversions are ambiguous: an inverted augmented triad is another augmented triad, an inverted sus4 a sus2.
-export const isRootPositionOnly = (triad: Triad | undefined) => triad === 'augmented' || triad === 'sus2' || triad === 'sus4'
+export const isRootPositionOnly = (triad: Triad) => triad === 'augmented' || triad === 'sus2' || triad === 'sus4'
 
 // The 3rd inversion puts the 7th in the bass; the 9th is never in the bass.
-export const inversionCountOf = (triad: Triad | undefined, extension: Extension) =>
+export const inversionCountOf = (triad: Triad, extension: Extension) =>
   isRootPositionOnly(triad) ? 1 : extension === '7' || extension === 'maj7' ? 4 : 3
 
 const bySemitones = (a: Tone, b: Tone) => a.semitones - b.semitones
@@ -112,31 +115,12 @@ export function randomQuestion(level: Level): Question {
   return questionOf(level, chord, inversion)
 }
 
-const join = (words: readonly string[]) => words.join(' and ')
-const INVERSION_NAMES = ['root position', '1st inversion', '2nd inversion', '3rd inversion']
+export const INVERSION_NAMES = ['root position', '1st inversion', '2nd inversion', '3rd inversion']
 
-const isInversionAsked = (level: Level, chord: Chord) => isExpert(level) && !isRootPositionOnly(chord.triad)
+const isInversionShown = (level: Level, chord: Chord) => isExpert(level) && !isRootPositionOnly(chord.triad)
 
 export function targetLabel(level: Level, { chord, inversion }: Question) {
   const parts = chord.extension === 'none' ? '' : ` (${chord.triad} + ${chord.extension})`
-  const inverted = isInversionAsked(level, chord) ? `, ${INVERSION_NAMES[inversion]}` : ''
+  const inverted = isInversionShown(level, chord) ? `, ${INVERSION_NAMES[inversion]}` : ''
   return `${chord.name}${parts}${inverted}`
-}
-
-// Only the groups shown in the level are graded; the inversion isn't asked for root-position-only chords.
-export function feedback(level: Level, question: Question, answer: Answer) {
-  const { chord, inversion } = question
-  const groups: [string, boolean][] = [['triad', answer.triad === chord.triad]]
-  if (extensionsOf(level).length > 1) groups.push(['extension', answer.extension === chord.extension])
-  if (isInversionAsked(level, chord)) groups.push(['inversion', answer.inversion === inversion])
-
-  const article = /^[aeiou]/.test(chord.name) ? 'an' : 'a'
-  const target = `It was ${article} ${targetLabel(level, question)}.`
-
-  const wrong = groups.filter(([, isRight]) => !isRight).map(([name]) => name)
-  if (wrong.length === 0) return { isHit: true, text: `You guessed right! ${target}` }
-  const right = groups.filter(([, isRight]) => isRight).map(([name]) => name)
-  const rightNames = right.length === 2 && wrong[0] === 'inversion' ? ['chord'] : right
-  const reason = right.length === 0 ? `Wrong ${join(wrong)}` : `Right ${join(rightNames)}, wrong ${join(wrong)}`
-  return { isHit: false, text: `${reason}. ${target}` }
 }

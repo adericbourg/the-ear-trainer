@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
 import ChordInversions from './exercises/pitch/chord-inversions/ChordInversions'
-import Chords from './exercises/pitch/chords/Chords'
+import ChordTypes from './exercises/pitch/chord-types/ChordTypes'
 import FrequencyIdentification from './exercises/sound-engineering/frequency-identification/FrequencyIdentification'
 import Intervals from './exercises/pitch/intervals/Intervals'
 import Panning from './exercises/sound-engineering/panning/Panning'
@@ -12,7 +12,7 @@ import { categories, ExerciseId, exercises } from './exercises'
 
 const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([
   [ExerciseId('intervals'), Intervals],
-  [ExerciseId('chords'), Chords],
+  [ExerciseId('chord-types'), ChordTypes],
   [ExerciseId('chord-inversions'), ChordInversions],
   [ExerciseId('frequency-identification'), FrequencyIdentification],
   [ExerciseId('panning'), Panning],

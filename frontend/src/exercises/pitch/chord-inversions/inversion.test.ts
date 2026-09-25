@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { inversionCountOf, type Question } from '../chords/chord'
+import { inversionCountOf, type Question } from '../chord-types/chord'
 import { inversionsOf, poolOf, randomQuestion, recapLabel, solutionOf } from './inversion'
 
 describe('inversion', () => {

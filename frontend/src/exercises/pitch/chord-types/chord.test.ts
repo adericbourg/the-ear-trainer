@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { chordsOf, extensionsOf, feedback, inversionCountOf, labelOf, randomQuestion, targetLabel, triadsOf, voicing, type Question } from './chord'
+import { choicesOf, chordsOf, inversionCountOf, labelOf, randomQuestion, targetLabel, voicing, type Question } from './chord'
 
 const chord = (name: string) => chordsOf('expert').find((c) => c.name === name)!
 const question = (name: string, inversion: number): Question => ({ chord: chord(name), inversion, notes: [], label: '' })
@@ -14,11 +14,22 @@ describe('chord', () => {
     expect(chordsOf('intermediate').map((c) => c.name)).toEqual(['major', 'minor', 'diminished', 'augmented'])
     expect(chordsOf('advanced').map((c) => c.name)).toEqual(['major', 'minor', 'diminished', 'augmented', 'maj7', 'dominant 7', 'm7'])
     expect(chordsOf('expert')).toHaveLength(11)
-    expect(triadsOf('advanced')).toEqual(['major', 'minor', 'diminished', 'augmented'])
-    expect(triadsOf('expert')).toEqual(['major', 'minor', 'diminished', 'augmented', 'sus2', 'sus4'])
-    expect(extensionsOf('intermediate')).toEqual(['none'])
-    expect(extensionsOf('advanced')).toEqual(['none', '7', 'maj7'])
-    expect(extensionsOf('expert')).toEqual(['none', '7', 'maj7', 'add9'])
+  })
+
+  it('choicesOf_keepsAtMost5ChordsIncludingTheTargetInTableOrder', () => {
+    // Beginner and Intermediate offer every chord of the level
+    expect(choicesOf('beginner', chord('minor')).map((c) => c.name)).toEqual(['major', 'minor'])
+    expect(choicesOf('intermediate', chord('major')).map((c) => c.name)).toEqual(['major', 'minor', 'diminished', 'augmented'])
+
+    // Advanced and Expert offer the target and 4 other chords of the level, in table order
+    for (const level of ['advanced', 'expert'] as const) {
+      for (const target of chordsOf(level)) {
+        const choices = choicesOf(level, target)
+        expect(choices).toHaveLength(5)
+        expect(choices).toContain(target)
+        expect(choices).toEqual(chordsOf(level).filter((c) => choices.includes(c)))
+      }
+    }
   })
 
   it('inversionCountOf_dependsOnTheChord', () => {
@@ -90,38 +101,7 @@ describe('chord', () => {
     })
   })
 
-  it('feedback_gradesOnlyTheGroupsOfTheLevel', () => {
-    // Beginner and Intermediate only grade the triad
-    expect(feedback('beginner', question('minor', 0), { triad: 'minor', extension: 'none', inversion: 0 })).toEqual({
-      isHit: true,
-      text: 'You guessed right! It was a minor.',
-    })
-    expect(feedback('intermediate', question('augmented', 0), { triad: 'major', extension: 'none', inversion: 0 }).text).toBe(
-      'Wrong triad. It was an augmented.',
-    )
-
-    // Advanced adds the extension
-    expect(feedback('advanced', question('m7', 0), { triad: 'minor', extension: 'maj7', inversion: 0 }).text).toBe(
-      'Right triad, wrong extension. It was a m7 (minor + 7).',
-    )
-    expect(feedback('advanced', question('m7', 0), { triad: 'major', extension: 'none', inversion: 0 }).text).toBe(
-      'Wrong triad and extension. It was a m7 (minor + 7).',
-    )
-
-    // Expert adds the inversion, except for root-position-only chords
-    expect(feedback('expert', question('maj7', 1), { triad: 'major', extension: 'maj7', inversion: 2 }).text).toBe(
-      'Right chord, wrong inversion. It was a maj7 (major + maj7), 1st inversion.',
-    )
-    expect(feedback('expert', question('maj7', 1), { triad: 'minor', extension: 'maj7', inversion: 2 }).text).toBe(
-      'Right extension, wrong triad and inversion. It was a maj7 (major + maj7), 1st inversion.',
-    )
-    expect(feedback('expert', question('sus4', 0), { triad: 'sus4', extension: 'none', inversion: 0 })).toEqual({
-      isHit: true,
-      text: 'You guessed right! It was a sus4.',
-    })
-  })
-
-  it('targetLabel_namesTheChordAndTheInversionOnlyWhenAsked', () => {
+  it('targetLabel_namesTheChordAndTheInversionOnlyWhenShown', () => {
     expect(targetLabel('beginner', question('minor', 0))).toBe('minor')
     expect(targetLabel('advanced', question('m7', 0))).toBe('m7 (minor + 7)')
     expect(targetLabel('expert', question('maj7', 1))).toBe('maj7 (major + maj7), 1st inversion')

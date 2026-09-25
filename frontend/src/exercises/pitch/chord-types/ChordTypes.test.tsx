@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import Chords from './Chords'
+import ChordTypes from './ChordTypes'
 import { toFrequency, type Level } from '../intervals/interval'
 import { playInterval, stopInterval } from '../../../tone'
 
@@ -11,17 +11,18 @@ function renderExercise(level: Level = 'beginner', isLastQuestion = false, isAut
   vi.spyOn(Math, 'random').mockReturnValue(0.5)
   const onCheck = vi.fn()
   const onNext = vi.fn()
-  render(<Chords level={level} isLastQuestion={isLastQuestion} isAutoPlay={isAutoPlay} onCheck={onCheck} onNext={onNext} />)
+  render(<ChordTypes level={level} isLastQuestion={isLastQuestion} isAutoPlay={isAutoPlay} onCheck={onCheck} onNext={onNext} />)
   return {
     onCheck,
     onNext,
     play: () => screen.getByRole('button', { name: 'Play' }),
     check: () => screen.getByRole('button', { name: 'Check' }),
-    triad: (name: string) => within(screen.getByRole('group', { name: 'Triad' })).getByRole('button', { name }),
+    type: (name: string) => within(screen.getByRole('group', { name: 'Chord type' })).getByRole('button', { name }),
+    types: () => within(screen.getByRole('group', { name: 'Chord type' })).getAllByRole('button').map((b) => b.textContent),
   }
 }
 
-describe('Chords', () => {
+describe('ChordTypes', () => {
   beforeEach(() => {
     vi.mocked(playInterval).mockClear()
     vi.mocked(stopInterval).mockClear()
@@ -31,16 +32,16 @@ describe('Chords', () => {
     vi.restoreAllMocks()
   })
 
-  it('triads_areEnabledOncePlayed', () => {
-    // Given a fresh Beginner exercise, focused on the first triad
-    const { play, triad, onCheck } = renderExercise()
+  it('types_areEnabledOncePlayed', () => {
+    // Given a fresh Beginner exercise, focused on the first type
+    const { play, type, onCheck } = renderExercise()
     expect(screen.queryByRole('group', { name: 'Level' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument()
-    expect(triad('major')).toHaveFocus()
-    expect(triad('major')).toHaveAttribute('aria-disabled', 'true')
+    expect(type('major')).toHaveFocus()
+    expect(type('major')).toHaveAttribute('aria-disabled', 'true')
 
-    // When clicking a triad before playing
-    fireEvent.click(triad('minor'))
+    // When clicking a type before playing
+    fireEvent.click(type('minor'))
 
     // Then nothing is submitted
     expect(onCheck).not.toHaveBeenCalled()
@@ -48,47 +49,45 @@ describe('Chords', () => {
     // When clicking Play
     fireEvent.click(play())
 
-    // Then the chord plays one note at a time, bass first, and the triads are enabled
+    // Then the chord plays one note at a time, bass first, and the types are enabled
     expect(playInterval).toHaveBeenCalledWith([66, 69, 73].map(toFrequency), false)
-    expect(triad('major')).not.toHaveAttribute('aria-disabled', 'true')
+    expect(type('major')).not.toHaveAttribute('aria-disabled', 'true')
 
-    // And Space replays from a triad, but not from another button
-    fireEvent.keyDown(triad('major'), { key: ' ' })
+    // And Space replays from a type, but not from another button
+    fireEvent.keyDown(type('major'), { key: ' ' })
     expect(playInterval).toHaveBeenCalledTimes(2)
     fireEvent.keyDown(play(), { key: ' ' })
     expect(playInterval).toHaveBeenCalledTimes(2)
   })
 
-  it('triad_whenHit_locksAnswerAndShowsTheChord', () => {
-    // Given a played Beginner chord: only the major and minor triads are asked
-    const { play, triad, onCheck } = renderExercise()
+  it('type_whenHit_locksAnswerAndShowsTheChord', () => {
+    // Given a played Beginner chord: only major and minor are offered
+    const { play, type, types, onCheck } = renderExercise()
     fireEvent.click(play())
-    expect(within(screen.getByRole('group', { name: 'Triad' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['major', 'minor'])
-    expect(screen.queryByRole('group', { name: 'Extension' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Inversion' })).not.toBeInTheDocument()
+    expect(types()).toEqual(['major', 'minor'])
 
     // When clicking minor
-    fireEvent.click(triad('minor'))
+    fireEvent.click(type('minor'))
 
     // Then it is a hit, with the chord name and notes, and the answer is locked
     expect(screen.getByText(/You guessed right! It was a minor\./)).toBeInTheDocument()
     expect(screen.getByText(/F♯m: F♯ A C♯/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
-    expect(triad('minor')).toHaveAttribute('data-result', 'hit')
-    expect(triad('major')).toHaveAttribute('aria-disabled', 'true')
-    fireEvent.click(triad('major'))
+    expect(type('minor')).toHaveAttribute('data-result', 'hit')
+    expect(type('major')).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(type('major'))
     expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'minor', isHit: true })
   })
 
   it('next_startsANewRound', () => {
-    // Given a checked miss, showing the right triad
-    const { play, triad, onCheck, onNext } = renderExercise()
+    // Given a checked miss, showing the right type
+    const { play, type, onCheck, onNext } = renderExercise()
     fireEvent.click(play())
-    fireEvent.click(triad('major'))
-    expect(screen.getByText(/Wrong triad\. It was a minor\./)).toBeInTheDocument()
+    fireEvent.click(type('major'))
+    expect(screen.getByText(/Missed! It was a minor\./)).toBeInTheDocument()
     expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'minor', isHit: false })
-    expect(triad('major')).toHaveAttribute('data-result', 'miss')
-    expect(triad('minor')).toHaveAttribute('data-result', 'hit')
+    expect(type('major')).toHaveAttribute('data-result', 'miss')
+    expect(type('minor')).toHaveAttribute('data-result', 'hit')
 
     // When clicking Next
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
@@ -96,54 +95,37 @@ describe('Chords', () => {
     // Then the series is told, audio stops and the round is reset
     expect(onNext).toHaveBeenCalledOnce()
     expect(stopInterval).toHaveBeenCalled()
-    expect(screen.queryByText(/Wrong triad/)).not.toBeInTheDocument()
-    expect(triad('major')).toHaveFocus()
-    expect(triad('major')).toHaveAttribute('aria-disabled', 'true')
-    expect(triad('major')).not.toHaveAttribute('data-result')
-    expect(triad('minor')).not.toHaveAttribute('data-result')
+    expect(screen.queryByText(/Missed/)).not.toBeInTheDocument()
+    expect(type('major')).toHaveFocus()
+    expect(type('major')).toHaveAttribute('aria-disabled', 'true')
+    expect(type('major')).not.toHaveAttribute('data-result')
+    expect(type('minor')).not.toHaveAttribute('data-result')
   })
 
   it('intermediate_answersWithOneClick', () => {
     // Given a played Intermediate exercise
-    const { play, triad, onCheck } = renderExercise('intermediate')
+    const { play, type, onCheck } = renderExercise('intermediate')
     fireEvent.click(play())
     expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument()
 
     // When clicking augmented
-    fireEvent.click(triad('augmented'))
+    fireEvent.click(type('augmented'))
 
     // Then the answer is submitted
     expect(onCheck).toHaveBeenCalledOnce()
   })
 
-  it('expert_asksExtensionAndInversion', () => {
-    // Given an Expert exercise
-    const { play, check, onCheck } = renderExercise('expert')
-    expect(screen.getByRole('radio', { name: 'sus4' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'add9' })).toBeInTheDocument()
+  it('expert_offers5TypesAndNamesTheInversionInTheSolution', () => {
+    // Given an Expert exercise: 5 of the 11 chords are offered, including the right one
+    const { play, type, types, onCheck } = renderExercise('expert')
+    expect(types()).toEqual(['augmented', 'maj7', 'dominant 7', 'm7', 'm7♭5'])
 
-    // Then the 3rd inversion is only available for 7th chords
-    const third = screen.getByRole('radio', { name: '3rd' })
-    expect(third).toBeDisabled()
-    fireEvent.click(screen.getByRole('radio', { name: '7' }))
-    expect(third).toBeEnabled()
-    fireEvent.click(third)
-    fireEvent.click(screen.getByRole('radio', { name: 'none' }))
-    expect(screen.getByRole('radio', { name: 'root position' })).toBeChecked()
-
-    // And the inversion isn't asked for root-position-only chords
-    fireEvent.click(screen.getByRole('radio', { name: 'augmented' }))
-    expect(screen.getByRole('radio', { name: '1st' })).toBeDisabled()
-
-    // When answering a major + 7, 2nd inversion to a played open F♯7/C♯
+    // When clicking dominant 7 for a played open F♯7/C♯
     fireEvent.click(play())
     expect(playInterval).toHaveBeenCalledWith([61, 66, 70, 76].map(toFrequency), true)
-    fireEvent.click(screen.getByRole('radio', { name: 'major' }))
-    fireEvent.click(screen.getByRole('radio', { name: '7' }))
-    fireEvent.click(screen.getByRole('radio', { name: '2nd' }))
-    fireEvent.click(check())
+    fireEvent.click(type('dominant 7'))
 
-    // Then it is a hit
+    // Then it is a hit, and the solution names the inversion
     expect(screen.getByText(/You guessed right! It was a dominant 7 \(major \+ 7\), 2nd inversion\./)).toBeInTheDocument()
     expect(screen.getByText(/F♯7\/C♯: C♯ F♯ A♯ E/)).toBeInTheDocument()
     expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'dominant 7 (major + 7), 2nd inversion', isHit: true })
@@ -151,13 +133,13 @@ describe('Chords', () => {
 
   it('autoPlay_playsEachNewQuestion', () => {
     // Given / When an auto-play exercise
-    const { triad } = renderExercise('beginner', false, true)
+    const { type } = renderExercise('beginner', false, true)
 
     // Then the chord plays without clicking Play
     expect(playInterval).toHaveBeenCalledExactlyOnceWith([toFrequency(66), toFrequency(69), toFrequency(73)], false)
 
     // When answering then clicking Next
-    fireEvent.click(triad('major'))
+    fireEvent.click(type('major'))
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
     // Then the new chord plays too
@@ -166,9 +148,9 @@ describe('Chords', () => {
 
   it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {
     // Given a checked last question
-    const { play, triad, onNext } = renderExercise('beginner', true)
+    const { play, type, onNext } = renderExercise('beginner', true)
     fireEvent.click(play())
-    fireEvent.click(triad('minor'))
+    fireEvent.click(type('minor'))
 
     // When clicking See score
     fireEvent.click(screen.getByRole('button', { name: 'See score' }))
