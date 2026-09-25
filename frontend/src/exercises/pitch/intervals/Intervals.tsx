@@ -101,7 +101,7 @@ export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, 
       </button>
 
       {isExpert(level) && (
-        <div role="group" aria-label="Octaves" className={styles.group}>
+        <div role="group" aria-label="Octaves" className={shared.group}>
           {OCTAVE_LABELS.map((label, i) => (
             <button
               key={label}
@@ -117,7 +117,7 @@ export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, 
         </div>
       )}
 
-      <div ref={answersRef} role="group" aria-label="Interval" className={styles.group}>
+      <div ref={answersRef} role="group" aria-label="Interval" className={shared.group}>
         {stopsOf(level).map((stop) => (
           <button
             key={stop}

@@ -11,9 +11,3 @@
   color: var(--content-bg);
   background: var(--disabled-fg);
 }
-
-.group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}

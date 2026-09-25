@@ -38,6 +38,12 @@
   outline-offset: 2px;
 }
 
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .icon {
   width: 1em;
   height: 1em;
