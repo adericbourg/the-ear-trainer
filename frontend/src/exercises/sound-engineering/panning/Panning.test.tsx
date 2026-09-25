@@ -1,15 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Level } from '../../pitch/intervals/interval'
 import Panning from './Panning'
 import { startNoise, stopTone } from '../../../tone'
 
 vi.mock('../../../tone', () => ({ startNoise: vi.fn(), stopTone: vi.fn() }))
 
 // Math.random() = 0.5 draws C (0), inside the initial Beginner selector (L25-R25); 0 draws L100, outside.
-function renderExercise(random = 0.5) {
+function renderExercise(random = 0.5, level: Level = 'beginner', isLastQuestion = false) {
   vi.spyOn(Math, 'random').mockReturnValue(random)
-  render(<Panning />)
+  const onCheck = vi.fn()
+  const onNext = vi.fn()
+  render(<Panning level={level} isLastQuestion={isLastQuestion} onCheck={onCheck} onNext={onNext} />)
   return {
+    onCheck,
+    onNext,
     selector: screen.getByRole('slider', { name: 'Pan guess' }),
     play: () => screen.getByRole('button', { name: /^(Play|Pause)$/ }),
     check: () => screen.getByRole('button', { name: 'Check' }),
@@ -27,8 +32,10 @@ describe('Panning', () => {
   })
 
   it('playButton_togglesPlaybackAndEnablesCheck', () => {
-    // Given a fresh exercise
-    const { play, check } = renderExercise()
+    // Given a fresh exercise, focused on the selector
+    const { selector, play, check } = renderExercise()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(selector).toHaveFocus()
     expect(screen.getByText(/Put on headphones/)).toBeInTheDocument()
     expect(play()).toHaveAccessibleName('Play')
     expect(play()).toHaveAttribute('aria-keyshortcuts', 'Space')
@@ -82,8 +89,7 @@ describe('Panning', () => {
 
   it('selector_movesWithKeyboard', () => {
     // Given the Intermediate selector at its initial position
-    const { selector } = renderExercise()
-    fireEvent.click(screen.getByRole('radio', { name: 'Intermediate' }))
+    const { selector } = renderExercise(0.5, 'intermediate')
     expect(selector).toHaveAttribute('aria-valuetext', 'L15 to R15')
 
     // When pressing PageUp, then Right arrow
@@ -108,7 +114,7 @@ describe('Panning', () => {
 
   it('check_whenHit_locksSelectorAndShowsSuccess', () => {
     // Given a played target inside the selector
-    const { selector, play, check } = renderExercise()
+    const { selector, play, check, onCheck } = renderExercise()
     fireEvent.click(play())
 
     // When clicking Check
@@ -121,6 +127,7 @@ describe('Panning', () => {
     expect(screen.getByText('You guessed right! The sound was panned C.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(selector).toHaveAttribute('aria-disabled', 'true')
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'C', isHit: true })
 
     // And the selector is locked
     fireEvent.keyDown(selector, { key: 'PageUp' })
@@ -129,13 +136,14 @@ describe('Panning', () => {
 
   it('check_whenMissOnEnter_showsMarker', () => {
     // Given a played target outside the selector
-    const { selector, play } = renderExercise(0)
+    const { selector, play, onCheck } = renderExercise(0)
     fireEvent.click(play())
 
     // When pressing Enter on the selector
     fireEvent.keyDown(selector, { key: 'Enter' })
 
     // Then the result is a miss, with a marker
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'L100', isHit: false })
     expect(screen.getByText('Missed! The sound was panned L100.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
@@ -143,7 +151,7 @@ describe('Panning', () => {
 
   it('next_startsANewRound', () => {
     // Given a checked miss, with playback running and the selector moved before check
-    const { selector, play } = renderExercise(0)
+    const { selector, play, onNext } = renderExercise(0)
     fireEvent.click(play())
     fireEvent.keyDown(selector, { key: 'End' })
     fireEvent.click(screen.getByRole('button', { name: 'Check' }))
@@ -152,7 +160,8 @@ describe('Panning', () => {
     // When clicking Next
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
-    // Then audio stops and the round is reset
+    // Then the series is told, audio stops and the round is reset
+    expect(onNext).toHaveBeenCalledOnce()
     expect(stopTone).toHaveBeenCalled()
     expect(play()).toHaveAccessibleName('Play')
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled()
@@ -168,23 +177,26 @@ describe('Panning', () => {
     expect(startNoise).toHaveBeenLastCalledWith(0)
   })
 
-  it('levelChange_resetsTheRoundAndNarrowsTheSelector', () => {
-    // Given a checked Beginner round, with playback running
-    const { selector, play, check } = renderExercise()
-    expect(screen.getByRole('radio', { name: 'Beginner' })).toBeChecked()
+  it('next_whenLastQuestion_readsSeeScoreAndKeepsTheRound', () => {
+    // Given a checked last question
+    const { play, check, onNext } = renderExercise(0.5, 'beginner', true)
     fireEvent.click(play())
     fireEvent.click(check())
 
-    // When switching to Expert
-    fireEvent.click(screen.getByRole('radio', { name: 'Expert' }))
+    // When clicking See score
+    fireEvent.click(screen.getByRole('button', { name: 'See score' }))
 
-    // Then audio stops, the round is reset, and the selector is narrower
-    expect(stopTone).toHaveBeenCalled()
-    expect(play()).toHaveAccessibleName('Play')
-    expect(check()).toBeDisabled()
-    expect(screen.queryByText(/You guessed right!/)).not.toBeInTheDocument()
+    // Then the series is told, and no new round starts
+    expect(onNext).toHaveBeenCalledOnce()
+    expect(screen.getByText(/You guessed right!/)).toBeInTheDocument()
+  })
+
+  it('level_narrowsTheSelector', () => {
+    // Given an Expert exercise
+    const { selector } = renderExercise(0.5, 'expert')
+
+    // Then the selector is narrower
     expect(selector).toHaveAttribute('aria-valuetext', 'L6 to R6')
     expect(parseFloat(selector.style.width)).toBeCloseTo(6)
-    expect(selector).not.toHaveAttribute('aria-disabled', 'true')
   })
 })

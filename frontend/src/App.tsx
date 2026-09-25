@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react'
+import type { ComponentType } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
 import Chords from './exercises/pitch/chords/Chords'
 import FrequencyIdentification from './exercises/sound-engineering/frequency-identification/FrequencyIdentification'
@@ -12,11 +12,7 @@ const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([
   [ExerciseId('intervals'), Intervals],
   [ExerciseId('chords'), Chords],
   [ExerciseId('frequency-identification'), FrequencyIdentification],
-])
-
-// ponytail: temporary, until every exercise goes through Series.
-const legacyPages = new Map<ExerciseId, () => ReactNode>([
-  [ExerciseId('panning'), () => <Panning />],
+  [ExerciseId('panning'), Panning],
 ])
 
 function Home() {
@@ -26,15 +22,9 @@ function Home() {
 function ExercisePage() {
   const { categoryId, exerciseId } = useParams()
   const exercise = exercises.find((e) => e.categoryId === categoryId && e.id === exerciseId)
-  if (!exercise) return <Navigate to="/" replace />
-  const Exercise = exercisePages.get(exercise.id)
-  if (Exercise) return <Series key={exercise.id} exerciseName={exercise.name} Exercise={Exercise} />
-  return (
-    <>
-      <h1>{exercise.name}</h1>
-      {legacyPages.get(exercise.id)?.()}
-    </>
-  )
+  const Exercise = exercise && exercisePages.get(exercise.id)
+  if (!Exercise) return <Navigate to="/" replace />
+  return <Series key={exercise.id} exerciseName={exercise.name} Exercise={Exercise} />
 }
 
 function App() {

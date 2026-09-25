@@ -14,14 +14,13 @@ import {
   toPan,
   toPosition,
 } from './pan'
-import { LEVELS, type Level } from '../../pitch/intervals/interval'
+import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import { startNoise, stopTone } from '../../../tone'
 
 const percent = (position: number) => `${position * 100}%`
 
-export default function Panning() {
-  const [level, setLevel] = useState<Level>('beginner')
+export default function Panning({ level, isLastQuestion, onCheck, onNext }: ExerciseProps) {
   const [target, setTarget] = useState(randomTarget)
   const [center, setCenter] = useState(INITIAL_CENTER)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -45,13 +44,13 @@ export default function Panning() {
   }
 
   const check = () => {
+    onCheck({ label: formatPan(target), isHit: isHit(level, target, center) })
     flushSync(() => setIsChecked(true))
     nextRef.current?.focus()
   }
 
-  const reset = (newLevel: Level) => {
+  const reset = () => {
     stopTone()
-    setLevel(newLevel)
     setIsPlaying(false)
     setTarget(randomTarget())
     setCenter(INITIAL_CENTER)
@@ -60,7 +59,9 @@ export default function Panning() {
   }
 
   const next = () => {
-    flushSync(() => reset(level))
+    onNext()
+    if (isLastQuestion) return
+    flushSync(reset)
     selectorRef.current?.focus()
   }
 
@@ -78,6 +79,8 @@ export default function Panning() {
   }, [])
 
   useEffect(() => stopTone, [])
+
+  useEffect(() => selectorRef.current?.focus(), [])
 
   const onSelectorKeyDown = (event: KeyboardEvent) => {
     if (isChecked) return
@@ -126,16 +129,6 @@ export default function Panning() {
 
   return (
     <div className={shared.exercise}>
-      <fieldset className={shared.choices}>
-        <legend>Level</legend>
-        {LEVELS.map(({ level: value, name }) => (
-          <label key={value} className={shared.choice}>
-            <input type="radio" name="level" value={value} checked={level === value} onChange={() => reset(value)} />
-            {name}
-          </label>
-        ))}
-      </fieldset>
-
       <p className={shared.instructions}>
         Put on headphones: with speakers, both ears hear both channels and the room blurs the position.
         <br />
@@ -210,7 +203,7 @@ export default function Panning() {
       <div className={shared.result}>
         {isChecked ? (
           <button ref={nextRef} type="button" className={shared.button} data-result={result} onClick={next}>
-            Next
+            {isLastQuestion ? 'See score' : 'Next'}
           </button>
         ) : (
           <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>
