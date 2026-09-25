@@ -18,7 +18,7 @@ function renderExercise(level: Level = 'beginner', isLastQuestion = false, isAut
     play: () => screen.getByRole('button', { name: 'Play' }),
     check: () => screen.getByRole('button', { name: 'Check' }),
     type: (name: string) => within(screen.getByRole('group', { name: 'Chord type' })).getByRole('button', { name }),
-    types: () => within(screen.getByRole('group', { name: 'Chord type' })).getAllByRole('button').map((b) => b.textContent),
+    types: () => within(screen.getByRole('group', { name: 'Chord type' })).getAllByRole('button').map((b) => b.lastChild?.textContent),
   }
 }
 
@@ -66,8 +66,14 @@ describe('ChordTypes', () => {
     fireEvent.click(play())
     expect(types()).toEqual(['major', 'minor'])
 
-    // When clicking minor
-    fireEvent.click(type('minor'))
+    // When pressing a key past the last type
+    fireEvent.keyDown(document, { key: '3', code: 'Digit3' })
+
+    // Then nothing is submitted
+    expect(onCheck).not.toHaveBeenCalled()
+
+    // When pressing minor's key, on the numeric keypad
+    fireEvent.keyDown(document, { key: '2', code: 'Numpad2' })
 
     // Then it is a hit, with the chord name and notes, and the answer is locked
     expect(screen.getByText(/You guessed right! It was a minor\./)).toBeInTheDocument()

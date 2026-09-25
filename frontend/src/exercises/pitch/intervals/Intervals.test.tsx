@@ -17,7 +17,9 @@ function renderExercise(level: Level = 'beginner', isLastQuestion = false, isAut
     onNext,
     unmount,
     play: () => screen.getByRole('button', { name: 'Play' }),
-    answers: () => within(screen.getByRole('group', { name: 'Interval' })).getAllByRole('button').map((button) => button.textContent),
+    // The last child is the name; the first one is the key hint.
+    answers: () => within(screen.getByRole('group', { name: 'Interval' })).getAllByRole('button').map((button) => button.lastChild?.textContent),
+    keys: () => within(screen.getByRole('group', { name: 'Interval' })).getAllByRole('button').map((button) => button.getAttribute('aria-keyshortcuts')),
     answer: (name: string) => within(screen.getByRole('group', { name: 'Interval' })).getByRole('button', { name }),
   }
 }
@@ -41,8 +43,9 @@ describe('Intervals', () => {
     expect(answer('minor 2nd')).toHaveAttribute('aria-disabled', 'true')
     expect(play()).toHaveAttribute('aria-keyshortcuts', 'Space')
 
-    // When clicking an answer before playing
+    // When clicking an answer, or pressing its key, before playing
     fireEvent.click(answer('major 3rd'))
+    fireEvent.keyDown(document, { key: '4', code: 'Digit4' })
 
     // Then nothing is submitted
     expect(onCheck).not.toHaveBeenCalled()
@@ -59,28 +62,42 @@ describe('Intervals', () => {
     expect(playInterval).toHaveBeenCalledTimes(2)
     fireEvent.keyDown(play(), { key: ' ' })
     expect(playInterval).toHaveBeenCalledTimes(2)
+
+    // And a key with a modifier doesn't answer (browser shortcuts)
+    fireEvent.keyDown(document, { key: '4', code: 'Digit4', metaKey: true })
+    expect(onCheck).not.toHaveBeenCalled()
+
+    // When pressing the 4th answer's key, on the physical key (here AZERTY, where it types an apostrophe)
+    fireEvent.keyDown(document, { key: "'", code: 'Digit4' })
+
+    // Then major 3rd is answered
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'major 3rd', isHit: true })
+    expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
   })
 
   it('answers_haveOneButtonPerIntervalOfTheLevel', () => {
     // Given a Beginner exercise
-    const { answers, unmount } = renderExercise()
+    const { answers, keys, unmount } = renderExercise()
 
-    // Then each answer is a full interval name
+    // Then each answer is a full interval name, with a digit key by position
     expect(answers()).toEqual(['minor 2nd', 'major 2nd', 'minor 3rd', 'major 3rd', '4th', '5th', 'Octave'])
+    expect(keys()).toEqual(['1', '2', '3', '4', '5', '6', '7'])
     unmount()
 
     // Given an Intermediate exercise
-    const { answers: intermediateAnswers, unmount: unmountIntermediate } = renderExercise('intermediate')
+    const { answers: intermediateAnswers, keys: intermediateKeys, unmount: unmountIntermediate } = renderExercise('intermediate')
 
-    // Then the Tritone, major 6th and minor 7th are answers too
+    // Then the Tritone, major 6th and minor 7th are answers too, and the 10th answer's key is 0
     expect(intermediateAnswers()).toEqual(['minor 2nd', 'major 2nd', 'minor 3rd', 'major 3rd', '4th', 'Tritone', '5th', 'major 6th', 'minor 7th', 'Octave'])
+    expect(intermediateKeys().at(-1)).toBe('0')
     unmountIntermediate()
 
     // Given an Advanced exercise
-    const { answers: advancedAnswers } = renderExercise('advanced')
+    const { answers: advancedAnswers, keys: advancedKeys } = renderExercise('advanced')
 
-    // Then the minor 6th is an answer too
+    // Then the minor 6th is an answer too, and the 11th and 12th answers' keys are - and =
     expect(advancedAnswers()).toContain('minor 6th')
+    expect(advancedKeys().slice(-2)).toEqual(['-', '='])
   })
 
   it('answer_whenHit_locksAnswersAndShowsSuccess', () => {
@@ -183,7 +200,18 @@ describe('Intervals', () => {
     const { play, answer } = renderExercise('expert')
 
     // Then octave buttons are shown
-    expect(screen.getByText(/Pick the octave first if the interval is wider than an octave\./)).toBeInTheDocument()
+    expect(screen.getByText(/Pick the octave first \(or press O\) if the interval is wider than an octave\./)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+0' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '+0' })).toHaveAttribute('aria-keyshortcuts', 'O')
+
+    // When pressing O three times
+    fireEvent.keyDown(document, { key: 'o', code: 'KeyO' })
+    expect(screen.getByRole('button', { name: '+1 octave' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(document, { key: 'o', code: 'KeyO' })
+    expect(screen.getByRole('button', { name: '+2 octaves' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(document, { key: 'o', code: 'KeyO' })
+
+    // Then the octave wraps back to +0
     expect(screen.getByRole('button', { name: '+0' })).toHaveAttribute('aria-pressed', 'true')
 
     // When answering a 5th + 1 octave to a harmonic 5th + 1 octave

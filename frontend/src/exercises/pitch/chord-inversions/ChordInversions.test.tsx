@@ -16,7 +16,7 @@ function renderExercise(level: Level = 'beginner', isLastQuestion = false, isAut
     onCheck,
     onNext,
     play: () => screen.getByRole('button', { name: 'Play' }),
-    inversions: () => within(screen.getByRole('group', { name: 'Inversion' })).getAllByRole('button').map((b) => b.textContent),
+    inversions: () => within(screen.getByRole('group', { name: 'Inversion' })).getAllByRole('button').map((b) => b.lastChild?.textContent),
     inversion: (name: string) => within(screen.getByRole('group', { name: 'Inversion' })).getByRole('button', { name }),
   }
 }
@@ -65,8 +65,14 @@ describe('ChordInversions', () => {
     const { play, inversion, onCheck } = renderExercise()
     fireEvent.click(play())
 
-    // When clicking the 1st inversion
-    fireEvent.click(inversion('1st inversion'))
+    // When pressing a key past the last inversion
+    fireEvent.keyDown(document, { key: '4', code: 'Digit4' })
+
+    // Then nothing is submitted
+    expect(onCheck).not.toHaveBeenCalled()
+
+    // When pressing the 1st inversion's key
+    fireEvent.keyDown(document, { key: '2', code: 'Digit2' })
 
     // Then it is a hit, with the bass and the chord notes, and the answer is locked
     expect(screen.getByText(/You guessed right! It was the 1st inversion \(3rd in the bass\)\./)).toBeInTheDocument()

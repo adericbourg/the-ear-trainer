@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { isHarmonic, toFrequency, type Level } from '../intervals/interval'
 import { choicesOf, randomQuestion, targetLabel, type Chord } from './chord'
+import { answerIndexOf, ANSWER_KEYS } from '../../answerKeys'
 import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import { playInterval, stopInterval } from '../../../tone'
@@ -53,7 +54,14 @@ export default function ChordTypes({ level, isLastQuestion, isAutoPlay, onCheck,
 
   // Space plays, except on buttons and links where it keeps its native activation.
   // Answers are the exception: focus starts on them, so Space there would submit instead of play. Enter still answers.
+  // Digit keys answer by position.
   const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    const choice = choices[answerIndexOf(event)]
+    if (choice !== undefined) {
+      event.preventDefault()
+      answer(choice)
+      return
+    }
     if (event.key !== ' ' || event.repeat) return
     const target = event.target instanceof Element ? event.target : null
     if (target?.closest('button, a') && !answersRef.current?.contains(target)) return
@@ -87,7 +95,7 @@ export default function ChordTypes({ level, isLastQuestion, isAutoPlay, onCheck,
       <p className={shared.instructions}>
         Click Play to hear the chord.
         <br />
-        Then click its type.
+        Then click its type, or press its key.
       </p>
 
       <button type="button" className={shared.button} aria-keyshortcuts="Space" onClick={play}>
@@ -98,15 +106,19 @@ export default function ChordTypes({ level, isLastQuestion, isAutoPlay, onCheck,
       </button>
 
       <div ref={answersRef} role="group" aria-label="Chord type" className={shared.group}>
-        {choices.map((chord) => (
+        {choices.map((chord, i) => (
           <button
             key={chord.name}
             type="button"
             className={shared.button}
             aria-disabled={!hasPlayed || isChecked}
+            aria-keyshortcuts={ANSWER_KEYS[i]}
             data-result={resultOf(chord)}
             onClick={() => answer(chord)}
           >
+            <kbd className={shared.key} aria-hidden="true">
+              {ANSWER_KEYS[i]}
+            </kbd>
             {chord.name}
           </button>
         ))}

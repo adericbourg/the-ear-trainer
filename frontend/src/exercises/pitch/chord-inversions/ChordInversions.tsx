@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { isHarmonic, toFrequency } from '../intervals/interval'
 import { inversionsOf, randomQuestion, recapLabel, solutionOf } from './inversion'
+import { answerIndexOf, ANSWER_KEYS } from '../../answerKeys'
 import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import { playInterval, stopInterval } from '../../../tone'
@@ -47,7 +48,14 @@ export default function ChordInversions({ level, isLastQuestion, isAutoPlay, onC
 
   // Space plays, except on buttons and links where it keeps its native activation.
   // Answers are the exception: focus starts on them, so Space there would submit instead of play. Enter still answers.
+  // Digit keys answer by position.
   const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    const inversion = answerIndexOf(event)
+    if (inversionsOf(level)[inversion] !== undefined) {
+      event.preventDefault()
+      answer(inversion)
+      return
+    }
     if (event.key !== ' ' || event.repeat) return
     const target = event.target instanceof Element ? event.target : null
     if (target?.closest('button, a') && !answersRef.current?.contains(target)) return
@@ -82,7 +90,7 @@ export default function ChordInversions({ level, isLastQuestion, isAutoPlay, onC
       <p className={shared.instructions}>
         Click Play to hear the chord.
         <br />
-        Then click the note it has in the bass.
+        Then click the note it has in the bass, or press its key.
       </p>
 
       <button type="button" className={shared.button} aria-keyshortcuts="Space" onClick={play}>
@@ -101,9 +109,13 @@ export default function ChordInversions({ level, isLastQuestion, isAutoPlay, onC
             type="button"
             className={shared.button}
             aria-disabled={!hasPlayed || isChecked}
+            aria-keyshortcuts={ANSWER_KEYS[inversion]}
             data-result={resultOf(inversion)}
             onClick={() => answer(inversion)}
           >
+            <kbd className={shared.key} aria-hidden="true">
+              {ANSWER_KEYS[inversion]}
+            </kbd>
             {label}
           </button>
         ))}

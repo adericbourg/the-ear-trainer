@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { isExpert, isHarmonic, randomQuestion, simpleOf, stopName, stopsOf, targetName, toFrequency } from './interval'
+import { answerIndexOf, ANSWER_KEYS } from '../../answerKeys'
 import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import styles from './Intervals.module.css'
@@ -51,7 +52,18 @@ export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, 
 
   // Space plays, except on buttons and links where it keeps its native activation.
   // Answers are the exception: focus starts on them, so Space there would submit instead of play. Enter still answers.
+  // Digit keys answer by position.
   const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    const choice = stopsOf(level)[answerIndexOf(event)]
+    if (choice !== undefined) {
+      event.preventDefault()
+      answer(choice)
+      return
+    }
+    if (event.code === 'KeyO' && isExpert(level) && !isChecked) {
+      setOctaves((octaves + 1) % OCTAVE_LABELS.length)
+      return
+    }
     if (event.key !== ' ' || event.repeat) return
     const target = event.target instanceof Element ? event.target : null
     if (target?.closest('button, a') && !answersRef.current?.contains(target)) return
@@ -86,11 +98,11 @@ export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, 
         <br />
         {isExpert(level) && (
           <>
-            Pick the octave first if the interval is wider than an octave.
+            Pick the octave first (or press O) if the interval is wider than an octave.
             <br />
           </>
         )}
-        Then click the interval you hear.
+        Then click the interval you hear, or press its key.
       </p>
 
       <button type="button" className={shared.button} aria-keyshortcuts="Space" onClick={play}>
@@ -108,6 +120,7 @@ export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, 
               type="button"
               className={`${shared.button} ${styles.toggle}`}
               aria-pressed={octaves === i}
+              aria-keyshortcuts="O"
               disabled={isChecked}
               onClick={() => setOctaves(i)}
             >
@@ -118,15 +131,19 @@ export default function Intervals({ level, isLastQuestion, isAutoPlay, onCheck, 
       )}
 
       <div ref={answersRef} role="group" aria-label="Interval" className={shared.group}>
-        {stopsOf(level).map((stop) => (
+        {stopsOf(level).map((stop, i) => (
           <button
             key={stop}
             type="button"
             className={shared.button}
             aria-disabled={!hasPlayed || isChecked}
+            aria-keyshortcuts={ANSWER_KEYS[i]}
             data-result={resultOf(stop)}
             onClick={() => answer(stop)}
           >
+            <kbd className={shared.key} aria-hidden="true">
+              {ANSWER_KEYS[i]}
+            </kbd>
             {stopName(stop)}
           </button>
         ))}
