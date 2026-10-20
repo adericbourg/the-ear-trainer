@@ -1,5 +1,3 @@
-import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
-import { flushSync } from 'react-dom'
 import {
   ARROW_STEP,
   bounds,
@@ -17,213 +15,49 @@ import {
   toFrequency,
   toPosition,
 } from './frequency'
+import RangeExercise from '../../RangeExercise'
 import type { ExerciseProps } from '../../Series'
-import shared from '../../exercise.module.css'
-import { startTone, stopTone } from '../../../tone'
+import { startTone } from '../../../tone'
 
-const percent = (position: number) => `${position * 100}%`
-
-export default function FrequencyIdentification({ level, isLastQuestion, isAutoPlay, onCheck, onNext }: ExerciseProps) {
-  const [target, setTarget] = useState(randomTarget)
-  const [center, setCenter] = useState(INITIAL_CENTER)
-  const [isPlaying, setIsPlaying] = useState(isAutoPlay)
-  const [hasPlayed, setHasPlayed] = useState(isAutoPlay)
-  const [isChecked, setIsChecked] = useState(false)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const selectorRef = useRef<HTMLDivElement>(null)
-  const nextRef = useRef<HTMLButtonElement>(null)
-  const dragOffset = useRef(0)
-
-  const { low, high } = bounds(level, center)
-
-  const togglePlayback = () => {
-    if (isPlaying) {
-      stopTone()
-    } else {
-      startTone(target)
-      setHasPlayed(true)
-    }
-    setIsPlaying(!isPlaying)
-  }
-
-  const check = () => {
-    onCheck({ label: `${target}Hz`, isHit: isHit(level, target, center) })
-    flushSync(() => setIsChecked(true))
-    nextRef.current?.focus()
-  }
-
-  const reset = () => {
-    stopTone()
-    setIsPlaying(isAutoPlay)
-    const newTarget = randomTarget()
-    setTarget(newTarget)
-    setCenter(INITIAL_CENTER)
-    setHasPlayed(isAutoPlay)
-    setIsChecked(false)
-    if (isAutoPlay) startTone(newTarget)
-  }
-
-  const next = () => {
-    onNext()
-    if (isLastQuestion) return
-    flushSync(reset)
-    selectorRef.current?.focus()
-  }
-
-  // Space toggles playback, except on buttons and links where it keeps its native activation.
-  const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
-    if (event.key !== ' ' || event.repeat) return
-    if (event.target instanceof Element && event.target.closest('button, a')) return
-    event.preventDefault()
-    togglePlayback()
-  })
-
-  useEffect(() => {
-    document.addEventListener('keydown', onDocumentKeyDown)
-    return () => document.removeEventListener('keydown', onDocumentKeyDown)
-  }, [])
-
-  useEffect(() => stopTone, [])
-
-  // Next plays from reset; the first question plays on mount.
-  const autoPlay = useEffectEvent(() => {
-    if (isAutoPlay) startTone(target)
-  })
-
-  useEffect(() => autoPlay(), [])
-
-  useEffect(() => selectorRef.current?.focus(), [])
-
-  const onSelectorKeyDown = (event: KeyboardEvent) => {
-    if (isChecked) return
-    const moves: Record<string, number> = {
-      ArrowLeft: nudge(level, center, 1 / ARROW_STEP),
-      ArrowDown: nudge(level, center, 1 / ARROW_STEP),
-      ArrowRight: nudge(level, center, ARROW_STEP),
-      ArrowUp: nudge(level, center, ARROW_STEP),
-      PageDown: center / PAGE_STEP,
-      PageUp: center * PAGE_STEP,
-      Home: centerMinOf(level),
-      End: centerMaxOf(level),
-    }
-    const moved = moves[event.key]
-    if (moved !== undefined) {
-      event.preventDefault()
-      setCenter(clampCenter(level, moved))
-    } else if (event.key === 'Enter' && hasPlayed) {
-      check()
-    }
-  }
-
-  const positionAt = (clientX: number) => {
-    const rect = trackRef.current!.getBoundingClientRect()
-    return (clientX - rect.left) / rect.width
-  }
-
-  // Dragging the box keeps the grab point under the pointer; clicking the track centers the box there.
-  const onTrackPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (isChecked) return
-    const position = positionAt(event.clientX)
-    const isOnSelector = event.target === selectorRef.current
-    dragOffset.current = isOnSelector ? position - toPosition(center) : 0
-    if (!isOnSelector) setCenter(clampCenter(level, toFrequency(position)))
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-
-  const onTrackPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
-    setCenter(clampCenter(level, toFrequency(positionAt(event.clientX) - dragOffset.current)))
-  }
-
-  const lowPosition = toPosition(center / halfSpanOf(level))
-  const highPosition = toPosition(center * halfSpanOf(level))
-  const result = isChecked ? (isHit(level, target, center) ? 'hit' : 'miss') : undefined
-
+export default function FrequencyIdentification(props: ExerciseProps) {
+  const { level } = props
   return (
-    <div className={shared.exercise}>
-      <p className={shared.instructions}>
-        Click Play to hear a sound of a given frequency.
-        <br />
-        Then slide the box to what you think is the frequency of that sound.
-        <br />
-        When you are sure of yourself, click Check.
-      </p>
-
-      <button type="button" className={shared.button} aria-keyshortcuts="Space" onClick={togglePlayback}>
-        <svg className={shared.icon} viewBox="0 0 16 16" aria-hidden="true">
-          {isPlaying ? (
-            <path d="M4 2h3v12H4zM9 2h3v12H9z" />
-          ) : (
-            <path d="M4 2l10 6-10 6z" />
-          )}
-        </svg>
-        {isPlaying ? 'Pause' : 'Play'}
-      </button>
-
-      <div className={shared.axis}>
-        <div className={shared.endLabels} aria-hidden="true">
-          <span>{F_MIN}Hz</span>
-          <span>{F_MAX}Hz</span>
-        </div>
-        <div
-          ref={trackRef}
-          className={shared.track}
-          onPointerDown={onTrackPointerDown}
-          onPointerMove={onTrackPointerMove}
-        >
-          <div
-            ref={selectorRef}
-            role="slider"
-            tabIndex={0}
-            aria-label="Frequency guess"
-            aria-valuemin={Math.round(centerMinOf(level))}
-            aria-valuemax={Math.round(centerMaxOf(level))}
-            aria-valuenow={Math.round(center)}
-            aria-valuetext={`${low} Hz to ${high} Hz`}
-            aria-disabled={isChecked}
-            className={shared.selector}
-            data-result={result}
-            style={{ left: percent(lowPosition), width: percent(highPosition - lowPosition) }}
-            onKeyDown={onSelectorKeyDown}
-          />
-          {isChecked && (
-            <div
-              data-testid="target-marker"
-              className={shared.marker}
-              style={{ left: percent(toPosition(target)) }}
-            />
-          )}
-        </div>
-        <div className={shared.boundLabels} aria-hidden="true">
-          <span className={shared.lowLabel} style={{ right: percent(1 - lowPosition) }}>
-            {low}Hz
-          </span>
-          <span className={shared.highLabel} style={{ left: percent(highPosition) }}>
-            {high}Hz
-          </span>
-          {isChecked && (
-            <span className={shared.markerLabel} style={{ left: percent(toPosition(target)) }}>
-              {target}Hz
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className={shared.result}>
-        {isChecked ? (
-          <button ref={nextRef} type="button" className={shared.button} data-result={result} onClick={next}>
-            {isLastQuestion ? 'See score' : 'Next'}
-          </button>
-        ) : (
-          <button type="button" className={shared.button} disabled={!hasPlayed} onClick={check}>
-            Check
-          </button>
-        )}
-        <p aria-live="polite">
-          {result === 'hit' && `You guessed right! The actual frequency was ${target}Hz.`}
-          {result === 'miss' && `Missed! The actual frequency was ${target}Hz.`}
-        </p>
-      </div>
-    </div>
+    <RangeExercise
+      {...props}
+      instructions={
+        <>
+          Click Play to hear a sound of a given frequency.
+          <br />
+          Then slide the box to what you think is the frequency of that sound.
+          <br />
+          When you are sure of yourself, click Check.
+        </>
+      }
+      sliderLabel="Frequency guess"
+      endLabels={[`${F_MIN}Hz`, `${F_MAX}Hz`]}
+      start={startTone}
+      randomTarget={randomTarget}
+      initialCenter={INITIAL_CENTER}
+      centerMin={centerMinOf(level)}
+      centerMax={centerMaxOf(level)}
+      clamp={(center) => clampCenter(level, center)}
+      bounds={(center) => bounds(level, center)}
+      // Drawn at the exact edges: the displayed bounds are rounded.
+      edgesOf={(center) => ({ low: center / halfSpanOf(level), high: center * halfSpanOf(level) })}
+      isHit={(target, center) => isHit(level, target, center)}
+      toPosition={toPosition}
+      fromPosition={toFrequency}
+      movesOf={(center) => ({
+        ArrowLeft: nudge(level, center, 1 / ARROW_STEP),
+        ArrowDown: nudge(level, center, 1 / ARROW_STEP),
+        ArrowRight: nudge(level, center, ARROW_STEP),
+        ArrowUp: nudge(level, center, ARROW_STEP),
+        PageDown: center / PAGE_STEP,
+        PageUp: center * PAGE_STEP,
+      })}
+      format={(frequency) => `${frequency}Hz`}
+      valueText={({ low, high }) => `${low} Hz to ${high} Hz`}
+      feedbackOf={(target) => `The actual frequency was ${target}Hz.`}
+    />
   )
 }
