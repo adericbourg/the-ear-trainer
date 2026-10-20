@@ -5,7 +5,7 @@ export const PAN_MIN = -100
 export const PAN_MAX = 100
 // Even selector widths keep the bounds integers.
 const HALF_WIDTH: Record<Level, number> = { beginner: 25, intermediate: 15, advanced: 10, expert: 6 }
-export const halfWidthOf = (level: Level) => HALF_WIDTH[level]
+const halfWidthOf = (level: Level) => HALF_WIDTH[level]
 export const centerMinOf = (level: Level) => PAN_MIN + halfWidthOf(level)
 export const centerMaxOf = (level: Level) => PAN_MAX - halfWidthOf(level)
 export const INITIAL_CENTER = 0
