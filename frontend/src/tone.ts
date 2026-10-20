@@ -16,19 +16,32 @@ function aWeighting(frequency: number) {
 export const gainFor = (frequency: number) => Math.min(1, GAIN * 10 ** ((aWeighting(1000) - aWeighting(frequency)) / 20))
 
 let context: AudioContext | undefined
+
+function fadingIn(audio: AudioContext, value: number) {
+  const gain = new GainNode(audio, { gain: 0 })
+  gain.gain.setValueAtTime(0, audio.currentTime)
+  gain.gain.linearRampToValueAtTime(value, audio.currentTime + FADE_SECONDS)
+  return gain
+}
+
+function fadeOut(audio: AudioContext, gain: GainNode, sources: readonly AudioScheduledSourceNode[]) {
+  const now = audio.currentTime
+  gain.gain.cancelScheduledValues(now)
+  gain.gain.setValueAtTime(gain.gain.value, now)
+  gain.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
+  for (const source of sources) source.stop(now + FADE_SECONDS)
+}
+
 let playing: { source: AudioScheduledSourceNode; gain: GainNode } | undefined
 
 export function startTone(frequency: number) {
   stopTone()
   // Created lazily: browsers only allow audio after a user gesture.
   context ??= new AudioContext()
-  const now = context.currentTime
   const oscillator = new OscillatorNode(context, { frequency })
-  const gain = new GainNode(context, { gain: 0 })
+  const gain = fadingIn(context, gainFor(frequency))
   oscillator.connect(gain).connect(context.destination)
-  gain.gain.setValueAtTime(0, now)
-  gain.gain.linearRampToValueAtTime(gainFor(frequency),now + FADE_SECONDS)
-  oscillator.start(now)
+  oscillator.start()
   playing = { source: oscillator, gain }
 }
 
@@ -61,13 +74,10 @@ function pinkNoise(audio: AudioContext) {
 export function startNoise(pan: number) {
   stopTone()
   context ??= new AudioContext()
-  const now = context.currentTime
   const source = new AudioBufferSourceNode(context, { buffer: (noise ??= pinkNoise(context)), loop: true })
-  const gain = new GainNode(context, { gain: 0 })
+  const gain = fadingIn(context, NOISE_GAIN)
   source.connect(gain).connect(new StereoPannerNode(context, { pan: pan / 100 })).connect(context.destination)
-  gain.gain.setValueAtTime(0, now)
-  gain.gain.linearRampToValueAtTime(NOISE_GAIN, now + FADE_SECONDS)
-  source.start(now)
+  source.start()
   playing = { source, gain }
 }
 
@@ -104,13 +114,7 @@ export function playInterval(frequencies: readonly number[], isHarmonic: boolean
 
 export function stopInterval() {
   if (!context) return
-  const now = context.currentTime
-  for (const { oscillator, gain } of notes) {
-    gain.gain.cancelScheduledValues(now)
-    gain.gain.setValueAtTime(gain.gain.value, now)
-    gain.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
-    oscillator.stop(now + FADE_SECONDS)
-  }
+  for (const { oscillator, gain } of notes) fadeOut(context, gain, [oscillator])
   notes = []
 }
 
@@ -158,10 +162,8 @@ export async function startMix(url: string, feedbackFrequencies: readonly number
   // The EQ may have moved while the sample was loading.
   const latestEq = mixEq ?? eq
   const now = audio.currentTime
-  const output = new GainNode(audio, { gain: 0 })
+  const output = fadingIn(audio, 1)
   output.connect(audio.destination)
-  output.gain.setValueAtTime(0, now)
-  output.gain.linearRampToValueAtTime(1, now + FADE_SECONDS)
   const source = new AudioBufferSourceNode(audio, { buffer, loop: true })
   const filters = filtersOf(latestEq).map((filter) => new BiquadFilterNode(audio, filter))
   filters.reduce<AudioNode>((previous, filter) => previous.connect(filter), source.connect(new GainNode(audio, { gain: SAMPLE_GAIN }))).connect(output)
@@ -190,23 +192,13 @@ export function setMixEq(eq: Eq) {
 export function stopMix() {
   mixRequest++
   if (!context || !mix) return
-  const now = context.currentTime
   const { source, feedbacks, output } = mix
-  output.gain.cancelScheduledValues(now)
-  output.gain.setValueAtTime(output.gain.value, now)
-  output.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
-  source.stop(now + FADE_SECONDS)
-  for (const { oscillator } of feedbacks) oscillator.stop(now + FADE_SECONDS)
+  fadeOut(context, output, [source, ...feedbacks.map(({ oscillator }) => oscillator)])
   mix = undefined
 }
 
 export function stopTone() {
   if (!context || !playing) return
-  const now = context.currentTime
-  const { source, gain } = playing
-  gain.gain.cancelScheduledValues(now)
-  gain.gain.setValueAtTime(gain.gain.value, now)
-  gain.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
-  source.stop(now + FADE_SECONDS)
+  fadeOut(context, playing.gain, [playing.source])
   playing = undefined
 }
