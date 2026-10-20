@@ -3,12 +3,10 @@ import {
   bounds,
   centerMaxOf,
   centerMinOf,
-  clampCenter,
   F_MAX,
   F_MIN,
   halfSpanOf,
   INITIAL_CENTER,
-  isHit,
   nudge,
   PAGE_STEP,
   randomTarget,
@@ -40,11 +38,9 @@ export default function FrequencyIdentification(props: ExerciseProps) {
       initialCenter={INITIAL_CENTER}
       centerMin={centerMinOf(level)}
       centerMax={centerMaxOf(level)}
-      clamp={(center) => clampCenter(level, center)}
       bounds={(center) => bounds(level, center)}
       // Drawn at the exact edges: the displayed bounds are rounded.
       edgesOf={(center) => ({ low: center / halfSpanOf(level), high: center * halfSpanOf(level) })}
-      isHit={(target, center) => isHit(level, target, center)}
       toPosition={toPosition}
       fromPosition={toFrequency}
       movesOf={(center) => ({

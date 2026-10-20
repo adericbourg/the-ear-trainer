@@ -38,8 +38,3 @@ export function nudge(level: Level, center: number, factor: number) {
   } while (bounds(level, next).low === low && bounds(level, next).high === high)
   return next
 }
-
-export function isHit(level: Level, target: number, center: number) {
-  const { low, high } = bounds(level, center)
-  return low <= target && target <= high
-}

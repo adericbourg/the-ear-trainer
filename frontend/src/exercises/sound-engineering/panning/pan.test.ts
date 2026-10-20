@@ -3,9 +3,7 @@ import {
   bounds,
   centerMaxOf,
   centerMinOf,
-  clampCenter,
   formatPan,
-  isHit,
   PAN_MAX,
   PAN_MIN,
   randomTarget,
@@ -56,21 +54,10 @@ describe('pan', () => {
     expect(bounds('expert', 30)).toEqual({ low: 24, high: 36 })
   })
 
-  it('clampCenter_keepsBoundsWithinRange', () => {
+  it('centerMinOf_andCenterMaxOf_keepBoundsWithinRange', () => {
     for (const { level } of LEVELS) {
-      expect(clampCenter(level, -1000)).toBe(centerMinOf(level))
-      expect(clampCenter(level, 1000)).toBe(centerMaxOf(level))
-      expect(clampCenter(level, 0)).toBe(0)
       expect(bounds(level, centerMinOf(level)).low).toBe(PAN_MIN)
       expect(bounds(level, centerMaxOf(level)).high).toBe(PAN_MAX)
     }
-  })
-
-  it('isHit_ofTargetOnABound_isTrue', () => {
-    expect(isHit('intermediate', -15, 0)).toBe(true)
-    expect(isHit('intermediate', 15, 0)).toBe(true)
-    expect(isHit('intermediate', 0, 0)).toBe(true)
-    expect(isHit('intermediate', -16, 0)).toBe(false)
-    expect(isHit('intermediate', 16, 0)).toBe(false)
   })
 })

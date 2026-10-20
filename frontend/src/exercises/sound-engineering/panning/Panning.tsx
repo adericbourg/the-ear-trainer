@@ -1,4 +1,4 @@
-import { ARROW_STEP, bounds, centerMaxOf, centerMinOf, clampCenter, formatPan, INITIAL_CENTER, isHit, PAGE_STEP, randomTarget, toPan, toPosition } from './pan'
+import { ARROW_STEP, bounds, centerMaxOf, centerMinOf, formatPan, INITIAL_CENTER, PAGE_STEP, randomTarget, toPan, toPosition } from './pan'
 import RangeExercise from '../../RangeExercise'
 import type { ExerciseProps } from '../../Series'
 import { startNoise } from '../../../tone'
@@ -26,9 +26,7 @@ export default function Panning(props: ExerciseProps) {
       initialCenter={INITIAL_CENTER}
       centerMin={centerMinOf(level)}
       centerMax={centerMaxOf(level)}
-      clamp={(center) => clampCenter(level, center)}
       bounds={(center) => bounds(level, center)}
-      isHit={(target, center) => isHit(level, target, center)}
       toPosition={toPosition}
       fromPosition={toPan}
       movesOf={(center) => ({

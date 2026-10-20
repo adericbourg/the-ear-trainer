@@ -139,6 +139,18 @@ describe('FrequencyIdentification', () => {
     expect(play()).toHaveAccessibleName('Pause')
   })
 
+  it('check_ofTargetOnADisplayedBound_isHit', () => {
+    // Given a played target at 870 Hz, on the displayed low bound of the initial Beginner selector
+    const { play, check, onCheck } = renderExercise(Math.log(8.7) / Math.log(150))
+    fireEvent.click(play())
+
+    // When clicking Check
+    fireEvent.click(check())
+
+    // Then the bound counts as inside
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: '870Hz', isHit: true })
+  })
+
   it('check_whenMissOnEnter_showsMarker', () => {
     // Given a played target outside the selector
     const { selector, play, onCheck } = renderExercise(0)

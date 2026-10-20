@@ -8,7 +8,6 @@ import {
   F_MAX,
   F_MIN,
   INITIAL_CENTER,
-  isHit,
   nudge,
   randomTarget,
   toFrequency,
@@ -96,14 +95,5 @@ describe('frequency', () => {
         }
       }
     }
-  })
-
-  it('isHit_ofTargetOnADisplayedBound_isTrue', () => {
-    const center = Math.sqrt(600 * 850)
-    expect(isHit('intermediate', 600, center)).toBe(true)
-    expect(isHit('intermediate', 850, center)).toBe(true)
-    expect(isHit('intermediate', 720, center)).toBe(true)
-    expect(isHit('intermediate', 590, center)).toBe(false)
-    expect(isHit('intermediate', 860, center)).toBe(false)
   })
 })

@@ -16,11 +16,9 @@ type Props = ExerciseProps & {
   readonly initialCenter: number
   readonly centerMin: number
   readonly centerMax: number
-  readonly clamp: (center: number) => number
   readonly bounds: (center: number) => Bounds
   // Where the box is drawn, when it differs from the displayed bounds.
   readonly edgesOf?: (center: number) => Bounds
-  readonly isHit: (target: number, center: number) => boolean
   readonly toPosition: (value: number) => number
   readonly fromPosition: (position: number) => number
   // Arrow and Page keys.
@@ -47,10 +45,8 @@ export default function RangeExercise({
   initialCenter,
   centerMin,
   centerMax,
-  clamp,
   bounds,
   edgesOf = bounds,
-  isHit,
   toPosition,
   fromPosition,
   movesOf,
@@ -69,6 +65,8 @@ export default function RangeExercise({
   const dragOffset = useRef(0)
 
   const { low, high } = bounds(center)
+  const isHit = low <= target && target <= high
+  const clamp = (value: number) => Math.min(Math.max(value, centerMin), centerMax)
 
   const togglePlayback = () => {
     if (isPlaying) {
@@ -81,7 +79,7 @@ export default function RangeExercise({
   }
 
   const check = () => {
-    onCheck({ label: format(target), isHit: isHit(target, center) })
+    onCheck({ label: format(target), isHit })
     flushSync(() => setIsChecked(true))
     nextRef.current?.focus()
   }
@@ -151,7 +149,7 @@ export default function RangeExercise({
   const edges = edgesOf(center)
   const lowPosition = toPosition(edges.low)
   const highPosition = toPosition(edges.high)
-  const result = isChecked ? (isHit(target, center) ? 'hit' : 'miss') : undefined
+  const result = isChecked ? (isHit ? 'hit' : 'miss') : undefined
 
   return (
     <div className={shared.exercise}>

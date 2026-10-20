@@ -19,11 +19,4 @@ export const toPan = (position: number) => Math.round(position * (PAN_MAX - PAN_
 
 export const randomTarget = () => PAN_MIN + Math.floor(Math.random() * (PAN_MAX - PAN_MIN + 1))
 
-export const clampCenter = (level: Level, center: number) => Math.min(Math.max(center, centerMinOf(level)), centerMaxOf(level))
-
 export const bounds = (level: Level, center: number) => ({ low: center - halfWidthOf(level), high: center + halfWidthOf(level) })
-
-export function isHit(level: Level, target: number, center: number) {
-  const { low, high } = bounds(level, center)
-  return low <= target && target <= high
-}

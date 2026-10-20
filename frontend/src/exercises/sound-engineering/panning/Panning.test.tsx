@@ -134,6 +134,18 @@ describe('Panning', () => {
     expect(selector).toHaveAttribute('aria-valuetext', 'L25 to R25')
   })
 
+  it('check_ofTargetOnABound_isHit', () => {
+    // Given a played target at L25, on the low bound of the initial Beginner selector
+    const { play, check, onCheck } = renderExercise(75.5 / 201)
+    fireEvent.click(play())
+
+    // When clicking Check
+    fireEvent.click(check())
+
+    // Then the bound counts as inside
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'L25', isHit: true })
+  })
+
   it('check_whenMissOnEnter_showsMarker', () => {
     // Given a played target outside the selector
     const { selector, play, onCheck } = renderExercise(0)
