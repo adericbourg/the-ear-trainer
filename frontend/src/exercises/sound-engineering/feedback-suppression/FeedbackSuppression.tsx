@@ -17,6 +17,7 @@ import {
 } from './eq'
 import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
+import { useSpaceToggle } from '../../useDocumentKeyDown'
 import styles from './FeedbackSuppression.module.css'
 import bandUrl from './band.mp3'
 import vocalsUrl from './vocals.mp3'
@@ -117,18 +118,7 @@ export default function FeedbackSuppression({ level, isLastQuestion, isAutoPlay,
     focusFirstControl()
   }
 
-  // Space toggles playback, except on buttons and links where it keeps its native activation.
-  const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
-    if (event.key !== ' ' || event.repeat) return
-    if (event.target instanceof Element && event.target.closest('button, a')) return
-    event.preventDefault()
-    togglePlayback()
-  })
-
-  useEffect(() => {
-    document.addEventListener('keydown', onDocumentKeyDown)
-    return () => document.removeEventListener('keydown', onDocumentKeyDown)
-  }, [])
+  useSpaceToggle(togglePlayback)
 
   useEffect(() => stopMix, [])
 

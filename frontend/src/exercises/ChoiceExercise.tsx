@@ -4,6 +4,7 @@ import { isHarmonic, toFrequency } from './pitch/intervals/interval'
 import { answerIndexOf, ANSWER_KEYS } from './answerKeys'
 import type { ExerciseProps } from './Series'
 import shared from './exercise.module.css'
+import { useDocumentKeyDown } from './useDocumentKeyDown'
 import { playInterval, stopInterval } from '../tone'
 
 type Props<Q, C> = ExerciseProps & {
@@ -88,7 +89,7 @@ export default function ChoiceExercise<Q extends { readonly notes: readonly numb
   // Digit keys answer by position.
   // Space plays, except on buttons and links where it keeps its native activation.
   // Answers are the exception: focus starts on them, so Space there would submit instead of play. Enter still answers.
-  const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
+  useDocumentKeyDown((event) => {
     const index = answerIndexOf(event)
     if (index >= 0 && index < choices.length) {
       event.preventDefault()
@@ -102,11 +103,6 @@ export default function ChoiceExercise<Q extends { readonly notes: readonly numb
     event.preventDefault()
     play()
   })
-
-  useEffect(() => {
-    document.addEventListener('keydown', onDocumentKeyDown)
-    return () => document.removeEventListener('keydown', onDocumentKeyDown)
-  }, [])
 
   useEffect(() => stopInterval, [])
 

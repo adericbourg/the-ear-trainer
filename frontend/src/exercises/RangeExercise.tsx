@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent, type P
 import { flushSync } from 'react-dom'
 import type { ExerciseProps } from './Series'
 import shared from './exercise.module.css'
+import { useSpaceToggle } from './useDocumentKeyDown'
 import { stopTone } from '../tone'
 
 type Bounds = { readonly low: number; readonly high: number }
@@ -103,18 +104,7 @@ export default function RangeExercise({
     selectorRef.current?.focus()
   }
 
-  // Space toggles playback, except on buttons and links where it keeps its native activation.
-  const onDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
-    if (event.key !== ' ' || event.repeat) return
-    if (event.target instanceof Element && event.target.closest('button, a')) return
-    event.preventDefault()
-    togglePlayback()
-  })
-
-  useEffect(() => {
-    document.addEventListener('keydown', onDocumentKeyDown)
-    return () => document.removeEventListener('keydown', onDocumentKeyDown)
-  }, [])
+  useSpaceToggle(togglePlayback)
 
   useEffect(() => stopTone, [])
 
