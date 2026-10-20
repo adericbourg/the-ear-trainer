@@ -1,7 +1,7 @@
 import { useId, useRef, useState, type ComponentType } from 'react'
 import { flushSync } from 'react-dom'
 import { LEVELS, type Level } from './pitch/intervals/interval'
-import { hitsOf, SERIES_LENGTH, type Answer } from './scoring'
+import { SERIES_LENGTH, type Answer } from './scoring'
 import shared from './exercise.module.css'
 
 export type ExerciseProps = {
@@ -52,7 +52,7 @@ export default function Series({ exerciseName, Exercise }: Props) {
 
   const isSeries = phase === 'series'
   const isScored = isSeries || phase === 'finished'
-  const hits = hitsOf(answers)
+  const hits = answers.filter((a) => a.isHit).length
 
   return (
     <>
