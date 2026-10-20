@@ -1,4 +1,4 @@
-import type { Level } from '../intervals/interval'
+import { randomItem, type Level } from '../intervals/interval'
 import { chordsOf, INVERSION_NAMES, inversionCountOf, isRootPositionOnly, questionOf, type Chord, type Question } from '../chord-types/chord'
 
 const BASSES = ['root', '3rd', '5th', '7th']
@@ -13,7 +13,7 @@ export const inversionsOf = (level: Level) => INVERSION_NAMES.slice(0, Math.max(
 
 export function randomQuestion(level: Level): Question {
   const pool = poolOf(level)
-  const chord = pool[Math.floor(Math.random() * pool.length)]!
+  const chord = randomItem(pool)
   return questionOf(level, chord, Math.floor(Math.random() * countOf(chord)))
 }
 

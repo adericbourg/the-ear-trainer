@@ -55,10 +55,10 @@ export function targetName(semitones: number) {
   return (simple === 6 ? 'tritone (augmented 4th / diminished 5th)' : stopName(simple)) + octaveSuffix(octaves)
 }
 
-const randomItem = <T>(items: readonly T[]) => items[Math.floor(Math.random() * items.length)]!
+export const randomItem = <T>(items: readonly T[]) => items[Math.floor(Math.random() * items.length)]!
 
-const HIGHEST_NOTE = 84 // C6
-const lowestNote = (level: Level) => (isExpert(level) ? 36 : 48) // C2 or C3
+export const HIGHEST_NOTE = 84 // C6
+export const lowestNote = (level: Level) => (isExpert(level) ? 36 : 48) // C2 or C3
 
 export type Question = { readonly semitones: number; readonly notes: readonly [number, number] }
 

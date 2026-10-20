@@ -1,4 +1,5 @@
-import type { Level } from '../../pitch/intervals/interval'
+import { randomItem, type Level } from '../../pitch/intervals/interval'
+import { roundTo2Digits } from '../frequency-identification/frequency'
 
 // Channel strip of a small console: sweepable low cut, low and high shelves, semi-parametric mid.
 export type Eq = {
@@ -105,9 +106,7 @@ export const BANDS = {
 } as const
 type Band = (typeof BANDS)[keyof typeof BANDS]
 
-const roundTo2Digits = (frequency: number) => Number(frequency.toPrecision(2))
 const randomIn = ({ min, max }: Band) => roundTo2Digits(min * (max / min) ** Math.random())
-const randomIndex = (length: number) => Math.floor(Math.random() * length)
 
 const ALL_BANDS = [BANDS.low, BANDS.mid, BANDS.high]
 
@@ -116,10 +115,10 @@ function bandsOf(level: Level): readonly Band[] {
     case 'beginner':
       return [BANDS.mid]
     case 'intermediate':
-      return [ALL_BANDS[randomIndex(3)]!]
+      return [randomItem(ALL_BANDS)]
     case 'advanced': {
-      const skipped = randomIndex(3)
-      return ALL_BANDS.filter((_, i) => i !== skipped)
+      const skipped = randomItem(ALL_BANDS)
+      return ALL_BANDS.filter((band) => band !== skipped)
     }
     case 'expert':
       return ALL_BANDS

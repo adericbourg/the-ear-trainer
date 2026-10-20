@@ -12,7 +12,7 @@ export const ARROW_STEP = 2 ** (1 / 24)
 export const PAGE_STEP = 2
 
 // 10 Hz steps below 1 kHz, 100 Hz up to 10 kHz, 1 kHz above: precision relative to the frequency.
-const roundTo2Digits = (frequency: number) => Number(frequency.toPrecision(2))
+export const roundTo2Digits = (frequency: number) => Number(frequency.toPrecision(2))
 
 export const toPosition = (frequency: number) => Math.log(frequency / F_MIN) / Math.log(F_MAX / F_MIN)
 export const toFrequency = (position: number) => F_MIN * (F_MAX / F_MIN) ** position

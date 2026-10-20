@@ -15,6 +15,7 @@ import {
   randomFeedbacks,
   type Eq,
 } from './eq'
+import { randomItem } from '../../pitch/intervals/interval'
 import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
 import { useSpaceToggle } from '../../useDocumentKeyDown'
@@ -24,7 +25,7 @@ import vocalsUrl from './vocals.mp3'
 import { setMixEq, startMix, stopMix } from '../../../tone'
 
 const SAMPLES = [vocalsUrl, bandUrl]
-const randomSample = () => SAMPLES[Math.floor(Math.random() * SAMPLES.length)]!
+const randomSample = () => randomItem(SAMPLES)
 
 type Control = { readonly key: keyof Eq; readonly label: string; readonly min: number; readonly max: number; readonly isFrequency: boolean }
 

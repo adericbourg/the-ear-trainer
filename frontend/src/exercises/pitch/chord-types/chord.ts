@@ -1,4 +1,4 @@
-import { isExpert, LEVELS, type Level } from '../intervals/interval'
+import { HIGHEST_NOTE, isExpert, LEVELS, lowestNote, randomItem, type Level } from '../intervals/interval'
 
 export type Triad = 'major' | 'minor' | 'diminished' | 'augmented' | 'sus2' | 'sus4'
 export type Extension = 'none' | '7' | 'maj7' | 'add9'
@@ -90,11 +90,6 @@ export function labelOf(root: string, chord: Chord, tones: readonly Tone[]) {
   const bass = notes[0] === root ? '' : `/${notes[0]}`
   return `${root}${chord.symbol}${bass}: ${notes.join(' ')}`
 }
-
-const randomItem = <T>(items: readonly T[]) => items[Math.floor(Math.random() * items.length)]!
-
-const HIGHEST_NOTE = 84 // C6
-const lowestNote = (level: Level) => (isExpert(level) ? 36 : 48) // C2 or C3
 
 export type Question = { readonly chord: Chord; readonly inversion: number; readonly notes: readonly number[]; readonly label: string }
 
