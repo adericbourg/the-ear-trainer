@@ -48,4 +48,10 @@ export const exercises: readonly Exercise[] = [
     description: 'Locate a sound between left and right. Headphones required.',
     categoryId: CategoryId('sound-engineering'),
   },
+  {
+    id: ExerciseId('feedback-suppression'),
+    name: 'Feedback suppression',
+    description: 'Make feedback disappear with a channel EQ.',
+    categoryId: CategoryId('sound-engineering'),
+  },
 ]

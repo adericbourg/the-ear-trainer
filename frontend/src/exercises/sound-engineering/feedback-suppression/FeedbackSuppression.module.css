@@ -1,0 +1,20 @@
+/* One row per control: name, slider, value. */
+.strip {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 20rem) 4.5rem;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.control {
+  display: contents;
+}
+
+.control input {
+  accent-color: var(--content-fg);
+}
+
+.control input:focus-visible {
+  outline: 2px solid var(--content-fg);
+  outline-offset: 2px;
+}

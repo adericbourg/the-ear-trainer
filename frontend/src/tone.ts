@@ -1,3 +1,5 @@
+import { feedbackLevel, filtersOf, type Eq } from './exercises/sound-engineering/feedback-suppression/eq'
+
 const GAIN = 0.2
 // Fades avoid audible clicks when starting or stopping the oscillator.
 const FADE_SECONDS = 0.02
@@ -110,6 +112,92 @@ export function stopInterval() {
     oscillator.stop(now + FADE_SECONDS)
   }
   notes = []
+}
+
+const SAMPLE_GAIN = 0.3
+// Time constant of the feedback level changes: it rings down instead of stopping dead.
+const FEEDBACK_SECONDS = 0.15
+const EQ_SECONDS = 0.01
+const samples = new Map<string, Promise<AudioBuffer>>()
+let mix:
+  | {
+      source: AudioBufferSourceNode
+      filters: BiquadFilterNode[]
+      feedbacks: { frequency: number; oscillator: OscillatorNode; gain: GainNode }[]
+      output: GainNode
+    }
+  | undefined
+let mixEq: Eq | undefined
+// Bumped by every start and stop: a sample that finishes loading after them is not played.
+let mixRequest = 0
+
+// Feedback tones don't go through the EQ: their level is the loop gain the EQ leaves them, as in a real feedback loop.
+// A third of the tone gain leaves headroom for boosts, capped so a boost stays loud but bearable.
+// ponytail: levels set by reasoning, not by ear: tune these two against the samples.
+const FEEDBACK_GAIN_RATIO = 1 / 3
+const FEEDBACK_GAIN_MAX = 0.8
+const feedbackGainOf = (eq: Eq, frequency: number) =>
+  Math.min(FEEDBACK_GAIN_MAX, gainFor(frequency) * FEEDBACK_GAIN_RATIO * feedbackLevel(eq, frequency))
+
+export async function startMix(url: string, feedbackFrequencies: readonly number[], eq: Eq) {
+  stopMix()
+  mixEq = eq
+  const request = mixRequest
+  const audio = (context ??= new AudioContext())
+  let sample = samples.get(url)
+  if (!sample) {
+    sample = fetch(url)
+      .then((response) => response.arrayBuffer())
+      .then((data) => audio.decodeAudioData(data))
+    samples.set(url, sample)
+    // A failed load is retried on the next start.
+    sample.catch(() => samples.delete(url))
+  }
+  const buffer = await sample
+  if (request !== mixRequest) return
+  // The EQ may have moved while the sample was loading.
+  const latestEq = mixEq ?? eq
+  const now = audio.currentTime
+  const output = new GainNode(audio, { gain: 0 })
+  output.connect(audio.destination)
+  output.gain.setValueAtTime(0, now)
+  output.gain.linearRampToValueAtTime(1, now + FADE_SECONDS)
+  const source = new AudioBufferSourceNode(audio, { buffer, loop: true })
+  const filters = filtersOf(latestEq).map((filter) => new BiquadFilterNode(audio, filter))
+  filters.reduce<AudioNode>((previous, filter) => previous.connect(filter), source.connect(new GainNode(audio, { gain: SAMPLE_GAIN }))).connect(output)
+  source.start(now)
+  const feedbacks = feedbackFrequencies.map((frequency) => {
+    const oscillator = new OscillatorNode(audio, { frequency })
+    const gain = new GainNode(audio, { gain: feedbackGainOf(latestEq, frequency) })
+    oscillator.connect(gain).connect(output)
+    oscillator.start(now)
+    return { frequency, oscillator, gain }
+  })
+  mix = { source, filters, feedbacks, output }
+}
+
+export function setMixEq(eq: Eq) {
+  mixEq = eq
+  if (!context || !mix) return
+  const now = context.currentTime
+  filtersOf(eq).forEach(({ frequency, gain }, i) => {
+    mix!.filters[i]!.frequency.setTargetAtTime(frequency, now, EQ_SECONDS)
+    mix!.filters[i]!.gain.setTargetAtTime(gain, now, EQ_SECONDS)
+  })
+  for (const { frequency, gain } of mix.feedbacks) gain.gain.setTargetAtTime(feedbackGainOf(eq, frequency), now, FEEDBACK_SECONDS)
+}
+
+export function stopMix() {
+  mixRequest++
+  if (!context || !mix) return
+  const now = context.currentTime
+  const { source, feedbacks, output } = mix
+  output.gain.cancelScheduledValues(now)
+  output.gain.setValueAtTime(output.gain.value, now)
+  output.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
+  source.stop(now + FADE_SECONDS)
+  for (const { oscillator } of feedbacks) oscillator.stop(now + FADE_SECONDS)
+  mix = undefined
 }
 
 export function stopTone() {

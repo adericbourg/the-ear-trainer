@@ -5,6 +5,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 ## Stack
 - Frontend only, in `frontend/`: React 19, TypeScript (strict), Vite, react-router (declarative mode).
 - Tests: Vitest + Testing Library (jsdom). Lint: oxlint. CI runs lint, test and build (`.github/workflows/frontend.yml`).
+- Audio samples sit next to the exercise that imports them (`import url from './x.mp3'`: Vite resolves it, `public/` paths break with `base: './'`). Only CC0 or CC-BY, credited in `README.md`; trimmed and compressed to under 1 MB.
 
 ## Typing
 - Strict TypeScript plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`.

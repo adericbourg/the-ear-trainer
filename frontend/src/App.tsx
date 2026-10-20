@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
 import ChordInversions from './exercises/pitch/chord-inversions/ChordInversions'
 import ChordTypes from './exercises/pitch/chord-types/ChordTypes'
+import FeedbackSuppression from './exercises/sound-engineering/feedback-suppression/FeedbackSuppression'
 import FrequencyIdentification from './exercises/sound-engineering/frequency-identification/FrequencyIdentification'
 import Intervals from './exercises/pitch/intervals/Intervals'
 import Panning from './exercises/sound-engineering/panning/Panning'
@@ -16,6 +17,7 @@ const exercisePages = new Map<ExerciseId, ComponentType<ExerciseProps>>([
   [ExerciseId('chord-inversions'), ChordInversions],
   [ExerciseId('frequency-identification'), FrequencyIdentification],
   [ExerciseId('panning'), Panning],
+  [ExerciseId('feedback-suppression'), FeedbackSuppression],
 ])
 
 function ExercisePage() {
