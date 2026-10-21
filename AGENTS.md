@@ -15,6 +15,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 
 ## Routing
 - `/`: home page.
+- `/scores`: scoreboard (`src/Scoreboard.tsx`), linked from the menu bar.
 - `/:categoryId/:exerciseId`: exercise page. Redirects to `/` when the pair is not in the registry.
 - Any other route redirects to `/`.
 - `BrowserRouter` is set in `main.tsx`; `App` only declares routes, so tests wrap it in a `MemoryRouter`.
@@ -29,6 +30,12 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 - Target WCAG 2.2 AA.
 - Menu uses the disclosure pattern (button + `aria-expanded` + `aria-controls`, Escape closes and returns focus). The current exercise uses `aria-current="page"` (from `NavLink`).
 - Below 768px the categories collapse behind a "Menu" burger button.
+
+## Scores
+- No backend, no data collected: scores live in `localStorage` (key `the-ear-trainer.scores`) and the scoreboard says so. Export/Import (JSON file, import replaces) is the only way to move them.
+- `Series` records a scored series once its last question is answered (free practice and series abandoned earlier are not recorded): one `DailyScore` per local day, exercise and level, keeping the best hits and the series count (`src/scores.ts`).
+- Stored and imported scores are external input: `parseScores` resolves ids and levels against the registry and drops invalid entries.
+- Mastered level: highest level with a `SERIES_LENGTH - 1` or better.
 
 ## Registering an exercise
 1. Add its category to `categories` in `frontend/src/exercises.ts` if it doesn't exist (`{ id: CategoryId('...'), name }`).

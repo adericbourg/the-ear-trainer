@@ -83,6 +83,12 @@ export default function MenuBar({ categories, exercises }: Props) {
           })}
         </ul>
       </nav>
+      <NavLink to="/scores" className={styles.scores!} onClick={closeAll}>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" />
+        </svg>
+        <span className={styles.scoresLabel}>Scores</span>
+      </NavLink>
     </header>
   )
 }

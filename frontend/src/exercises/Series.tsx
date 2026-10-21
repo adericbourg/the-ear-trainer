@@ -1,5 +1,7 @@
 import { useId, useRef, useState, type ComponentType } from 'react'
 import { flushSync } from 'react-dom'
+import type { ExerciseId } from '../exercises'
+import { loadScores, localDate, recordSeries, saveScores } from '../scores'
 import { LEVELS, type Level } from './pitch/intervals/interval'
 import { SERIES_LENGTH, type Answer } from './scoring'
 import shared from './exercise.module.css'
@@ -13,13 +15,17 @@ export type ExerciseProps = {
   readonly onNext: () => void
 }
 
-type Props = { readonly exerciseName: string; readonly Exercise: ComponentType<ExerciseProps> }
+type Props = {
+  readonly exerciseId: ExerciseId
+  readonly exerciseName: string
+  readonly Exercise: ComponentType<ExerciseProps>
+}
 type Phase = 'setup' | 'practice' | 'series' | 'finished'
 
 const levelName = (level: Level) => LEVELS.find((l) => l.level === level)!.name
 const doNothing = () => {}
 
-export default function Series({ exerciseName, Exercise }: Props) {
+export default function Series({ exerciseId, exerciseName, Exercise }: Props) {
   const [phase, setPhase] = useState<Phase>('setup')
   const [level, setLevel] = useState<Level>('beginner')
   const [isAutoPlay, setIsAutoPlay] = useState(false)
@@ -39,6 +45,15 @@ export default function Series({ exerciseName, Exercise }: Props) {
   const backToSetup = () => {
     flushSync(() => setPhase('setup'))
     levelsRef.current?.querySelector<HTMLInputElement>('input:checked')?.focus()
+  }
+
+  // Recorded on the last answer rather than on Next: an exercise may call onCheck and onNext in the same event, before answers updates.
+  const onCheck = (answer: Answer) => {
+    const newAnswers = [...answers, answer]
+    setAnswers(newAnswers)
+    if (newAnswers.length < SERIES_LENGTH) return
+    const hits = newAnswers.filter((a) => a.isHit).length
+    saveScores(recordSeries(loadScores(), { date: localDate(new Date()), exerciseId, level, hits }))
   }
 
   const onNext = () => {
@@ -104,7 +119,7 @@ export default function Series({ exerciseName, Exercise }: Props) {
             level={level}
             isLastQuestion={isSeries && questionNumber === SERIES_LENGTH}
             isAutoPlay={isAutoPlay}
-            onCheck={isSeries ? (answer) => setAnswers((previous) => [...previous, answer]) : doNothing}
+            onCheck={isSeries ? onCheck : doNothing}
             onNext={isSeries ? onNext : doNothing}
           />
         </div>

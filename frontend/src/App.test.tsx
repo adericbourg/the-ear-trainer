@@ -17,6 +17,19 @@ describe('App', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'The Ear Trainer' })).toBeInTheDocument()
   })
 
+  it('render_ofScoresRoute_showsTheScoreboard', () => {
+    // Given the scores route
+    // When the App is rendered
+    render(
+      <MemoryRouter initialEntries={['/scores']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    // Then the scoreboard is displayed
+    expect(screen.getByRole('heading', { level: 1, name: 'Scores' })).toBeInTheDocument()
+  })
+
   it('render_ofFrequencyIdentificationRoute_showsTheExerciseListedInTheMenu', () => {
     // Given the frequency identification route
     // When the App is rendered

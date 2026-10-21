@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ExerciseId } from '../exercises'
+import { loadScores } from '../scores'
 import Series, { type ExerciseProps } from './Series'
 
 // Answers a question in one click: Check then Next.
@@ -23,11 +25,17 @@ function FakeExercise({ level, isLastQuestion, isAutoPlay, onCheck, onNext }: Ex
   )
 }
 
-const renderSeries = () => render(<Series exerciseName="Fake" Exercise={FakeExercise} />)
+const renderSeries = () =>
+  render(<Series exerciseId={ExerciseId('intervals')} exerciseName="Fake" Exercise={FakeExercise} />)
 const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }))
 const score = () => screen.queryByText(/^Score:/)
 
 describe('Series', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useRealTimers()
+  })
+
   it('render_showsTheSetupWithoutTheExercise', () => {
     // Given / When a fresh series
     renderSeries()
@@ -67,6 +75,7 @@ describe('Series', () => {
     expect(screen.getByText('Playing advanced')).toBeInTheDocument()
     expect(screen.queryByText('Last question')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Results' })).not.toBeInTheDocument()
+    expect(loadScores()).toEqual([])
 
     // When clicking Stop
     click('Stop')
@@ -78,7 +87,9 @@ describe('Series', () => {
   })
 
   it('scoredSeries_scoresTenQuestionsThenShowsTheResults', () => {
-    // Given the Intermediate level
+    // Given the Intermediate level, on 21 October
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 21, 22, 30))
     renderSeries()
     fireEvent.click(screen.getByRole('radio', { name: 'Intermediate' }))
 
@@ -117,6 +128,11 @@ describe('Series', () => {
     expect(items[1]).toHaveTextContent(/Hard one — failed$/)
     expect(items[9]).toHaveTextContent(/Hard one — failed$/)
 
+    // And the score is recorded for that day, exercise and level
+    expect(loadScores()).toEqual([
+      { date: '2026-10-21', exerciseId: ExerciseId('intervals'), level: 'intermediate', bestHits: 6, seriesCount: 1 },
+    ])
+
     // When starting a new series
     click('New series')
 
@@ -138,9 +154,10 @@ describe('Series', () => {
     // When abandoning it
     click('Abandon series')
 
-    // Then the setup is back
+    // Then the setup is back, and nothing is recorded
     expect(screen.queryByText(/^Playing/)).not.toBeInTheDocument()
     expect(score()).not.toBeInTheDocument()
+    expect(loadScores()).toEqual([])
 
     // And a new series starts from scratch
     click('Scored series')

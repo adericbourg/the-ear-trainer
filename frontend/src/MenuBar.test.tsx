@@ -36,6 +36,16 @@ describe('MenuBar', () => {
     expect(screen.getByRole('link', { name: 'The Ear Trainer' })).toHaveAttribute('href', '/')
   })
 
+  it('scoresLink_linksToTheScoresAndIsMarkedWhenCurrent', () => {
+    // Given / When the scores page is current
+    renderMenuBar('/scores')
+
+    // Then the Scores link points to it, marked as current page
+    const link = screen.getByRole('link', { name: 'Scores' })
+    expect(link).toHaveAttribute('href', '/scores')
+    expect(link).toHaveAttribute('aria-current', 'page')
+  })
+
   it('render_ofCategoryWithoutExercise_doesNotRenderIt', () => {
     // Given a category without exercises
     // When the menu bar is rendered

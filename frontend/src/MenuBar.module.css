@@ -40,6 +40,17 @@
 
 .nav {
   position: relative;
+  margin-left: auto;
+}
+
+.bar .scores {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.bar .scores[aria-current='page'] {
+  color: var(--accent);
 }
 
 .categories,
@@ -103,6 +114,16 @@
   .category button {
     width: 100%;
     text-align: left;
+  }
+
+  /* The icon alone on small screens, the label kept for assistive technologies. */
+  .scoresLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .submenu {
