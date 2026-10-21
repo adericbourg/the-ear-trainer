@@ -7,12 +7,14 @@ import { stopTone } from '../tone'
 
 type Bounds = { readonly low: number; readonly high: number }
 
-type Props = ExerciseProps & {
+type Props<T> = ExerciseProps & {
   readonly instructions: ReactNode
   readonly sliderLabel: string
   readonly endLabels: readonly string[]
-  readonly start: (target: number) => void
-  readonly randomTarget: () => number
+  readonly start: (target: T) => void
+  readonly randomTarget: () => T
+  // Where the target sits on the scale.
+  readonly valueOf: (target: T) => number
   readonly initialCenter: number
   readonly centerMin: number
   readonly centerMax: number
@@ -26,13 +28,13 @@ type Props = ExerciseProps & {
   readonly format: (value: number) => string
   readonly valueText: (bounds: Bounds) => string
   // Follows "You guessed right!" or "Missed!".
-  readonly feedbackOf: (target: number) => string
+  readonly feedbackOf: (target: T) => string
 }
 
 const percent = (position: number) => `${position * 100}%`
 
 // An exercise where a played target is located by sliding a box over a scale.
-export default function RangeExercise({
+export default function RangeExercise<T>({
   isLastQuestion,
   isAutoPlay,
   onCheck,
@@ -42,6 +44,7 @@ export default function RangeExercise({
   endLabels,
   start,
   randomTarget,
+  valueOf,
   initialCenter,
   centerMin,
   centerMax,
@@ -53,7 +56,7 @@ export default function RangeExercise({
   format,
   valueText,
   feedbackOf,
-}: Props) {
+}: Props<T>) {
   const [target, setTarget] = useState(randomTarget)
   const [center, setCenter] = useState(initialCenter)
   const [isPlaying, setIsPlaying] = useState(isAutoPlay)
@@ -65,7 +68,8 @@ export default function RangeExercise({
   const dragOffset = useRef(0)
 
   const { low, high } = bounds(center)
-  const isHit = low <= target && target <= high
+  const value = valueOf(target)
+  const isHit = low <= value && value <= high
   const clamp = (value: number) => Math.min(Math.max(value, centerMin), centerMax)
 
   const togglePlayback = () => {
@@ -79,7 +83,7 @@ export default function RangeExercise({
   }
 
   const check = () => {
-    onCheck({ label: format(target), isHit })
+    onCheck({ label: format(value), isHit })
     flushSync(() => setIsChecked(true))
     nextRef.current?.focus()
   }
@@ -184,7 +188,7 @@ export default function RangeExercise({
             style={{ left: percent(lowPosition), width: percent(highPosition - lowPosition) }}
             onKeyDown={onSelectorKeyDown}
           />
-          {isChecked && <div data-testid="target-marker" className={shared.marker} style={{ left: percent(toPosition(target)) }} />}
+          {isChecked && <div data-testid="target-marker" className={shared.marker} style={{ left: percent(toPosition(value)) }} />}
         </div>
         <div className={shared.boundLabels} aria-hidden="true">
           <span className={shared.lowLabel} style={{ right: percent(1 - lowPosition) }}>
@@ -194,8 +198,8 @@ export default function RangeExercise({
             {format(high)}
           </span>
           {isChecked && (
-            <span className={shared.markerLabel} style={{ left: percent(toPosition(target)) }}>
-              {format(target)}
+            <span className={shared.markerLabel} style={{ left: percent(toPosition(value)) }}>
+              {format(value)}
             </span>
           )}
         </div>

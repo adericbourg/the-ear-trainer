@@ -23,6 +23,7 @@ export default function Panning(props: ExerciseProps) {
       endLabels={['L', 'C', 'R']}
       start={startNoise}
       randomTarget={randomTarget}
+      valueOf={(pan) => pan}
       initialCenter={INITIAL_CENTER}
       centerMin={centerMinOf(level)}
       centerMax={centerMaxOf(level)}

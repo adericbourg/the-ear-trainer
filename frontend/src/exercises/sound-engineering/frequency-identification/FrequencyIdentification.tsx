@@ -35,6 +35,7 @@ export default function FrequencyIdentification(props: ExerciseProps) {
       endLabels={[`${F_MIN}Hz`, `${F_MAX}Hz`]}
       start={startTone}
       randomTarget={randomTarget}
+      valueOf={(frequency) => frequency}
       initialCenter={INITIAL_CENTER}
       centerMin={centerMinOf(level)}
       centerMax={centerMaxOf(level)}
