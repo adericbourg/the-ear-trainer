@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import ChordInversions from './exercises/harmony/chord-inversions/ChordInversions'
+import ChordProgressions from './exercises/harmony/chord-progressions/ChordProgressions'
 import ChordTypes from './exercises/harmony/chord-types/ChordTypes'
 import Intervals from './exercises/pitch/intervals/Intervals'
 import FeedbackSuppression from './exercises/sound-engineering/feedback-suppression/FeedbackSuppression'
@@ -48,6 +49,13 @@ export const exercises: readonly (Exercise & { readonly component: ComponentType
     description: 'Recognize which note of a chord is in the bass.',
     categoryId: CategoryId('harmony'),
     component: ChordInversions,
+  },
+  {
+    id: ExerciseId('chord-progressions'),
+    name: 'Chord progressions',
+    description: 'Recognize a chord progression, from cadences to pop and jazz classics.',
+    categoryId: CategoryId('harmony'),
+    component: ChordProgressions,
   },
   {
     id: ExerciseId('frequency-identification'),

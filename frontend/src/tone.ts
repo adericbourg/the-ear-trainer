@@ -91,25 +91,39 @@ const HARMONICS = [0, 1, 0.5, 0.3, 0.2, 0.12, 0.08, 0.05]
 let wave: PeriodicWave | undefined
 let notes: { oscillator: OscillatorNode; gain: GainNode }[] = []
 
+function playNote(audio: AudioContext, frequency: number, start: number, peak: number) {
+  const periodicWave = (wave ??= new PeriodicWave(audio, { real: new Float32Array(HARMONICS.length), imag: new Float32Array(HARMONICS) }))
+  const oscillator = new OscillatorNode(audio, { frequency, periodicWave })
+  const gain = new GainNode(audio, { gain: 0 })
+  oscillator.connect(gain).connect(audio.destination)
+  gain.gain.setValueAtTime(0, start)
+  gain.gain.linearRampToValueAtTime(peak, start + NOTE_ATTACK_SECONDS)
+  // Exponential ramps can't reach 0: decay to an inaudible level instead.
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + NOTE_DECAY_SECONDS)
+  oscillator.start(start)
+  oscillator.stop(start + NOTE_DECAY_SECONDS)
+  return { oscillator, gain }
+}
+
 // Melodic intervals play one note after the other; harmonic ones play them together, each at half gain to avoid clipping.
 export function playInterval(frequencies: readonly number[], isHarmonic: boolean) {
   stopInterval()
   const audio = (context ??= new AudioContext())
-  const periodicWave = (wave ??= new PeriodicWave(audio, { real: new Float32Array(HARMONICS.length), imag: new Float32Array(HARMONICS) }))
   const peak = isHarmonic ? NOTE_GAIN / 2 : NOTE_GAIN
-  notes = frequencies.map((frequency, i) => {
-    const start = audio.currentTime + (isHarmonic ? 0 : i * MELODIC_DELAY_SECONDS)
-    const oscillator = new OscillatorNode(audio, { frequency, periodicWave })
-    const gain = new GainNode(audio, { gain: 0 })
-    oscillator.connect(gain).connect(audio.destination)
-    gain.gain.setValueAtTime(0, start)
-    gain.gain.linearRampToValueAtTime(peak, start + NOTE_ATTACK_SECONDS)
-    // Exponential ramps can't reach 0: decay to an inaudible level instead.
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + NOTE_DECAY_SECONDS)
-    oscillator.start(start)
-    oscillator.stop(start + NOTE_DECAY_SECONDS)
-    return { oscillator, gain }
-  })
+  notes = frequencies.map((frequency, i) => playNote(audio, frequency, audio.currentTime + (isHarmonic ? 0 : i * MELODIC_DELAY_SECONDS), peak))
+}
+
+const CHORD_SECONDS = 1
+// 4-note chords: a quarter of the melodic gain per note.
+const CHORD_NOTE_GAIN = NOTE_GAIN / 4
+
+// One chord after the other; an empty chord is a rest.
+export function playChords(chords: readonly (readonly number[])[]) {
+  stopInterval()
+  const audio = (context ??= new AudioContext())
+  notes = chords.flatMap((frequencies, i) =>
+    frequencies.map((frequency) => playNote(audio, frequency, audio.currentTime + i * CHORD_SECONDS, CHORD_NOTE_GAIN)),
+  )
 }
 
 export function stopInterval() {
