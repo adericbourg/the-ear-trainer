@@ -1,4 +1,7 @@
-import type { Level } from '../../pitch/intervals/interval'
+import { randomItem, toFrequency, type Level } from '../../pitch/intervals/interval'
+import { randomQuestion } from '../../harmony/chord-progressions/progression'
+import vocalsUrl from '../feedback-suppression/vocals.mp3'
+import type { PanSound } from '../../../tone'
 
 // -100 = hard left, 0 = center, 100 = hard right.
 export const PAN_MIN = -100
@@ -17,6 +20,33 @@ export const formatPan = (pan: number) => (pan === 0 ? 'C' : pan < 0 ? `L${-pan}
 export const toPosition = (pan: number) => (pan - PAN_MIN) / (PAN_MAX - PAN_MIN)
 export const toPan = (position: number) => Math.round(position * (PAN_MAX - PAN_MIN) + PAN_MIN)
 
-export const randomTarget = () => PAN_MIN + Math.floor(Math.random() * (PAN_MAX - PAN_MIN + 1))
+// MIDI numbers: A3 to A5.
+const LOWEST_NOTE = 57
+const HIGHEST_NOTE = 81
+const randomNote = () => toFrequency(LOWEST_NOTE + Math.floor(Math.random() * (HIGHEST_NOTE - LOWEST_NOTE + 1)))
+
+const SOUNDS: readonly (() => PanSound)[] = [
+  () => ({ kind: 'noise' }),
+  () => ({ kind: 'tone', frequency: randomNote() }),
+  () => ({ kind: 'pulses', frequency: randomNote() }),
+  () => ({ kind: 'chords', chords: randomQuestion('advanced').chords.map((chord) => chord.map(toFrequency)) }),
+  () => ({ kind: 'sample', url: vocalsUrl }),
+]
+
+export const randomSound = () => randomItem(SOUNDS)()
+
+const SUBJECTS: Record<PanSound['kind'], string> = {
+  noise: 'The pink noise was',
+  tone: 'The tone was',
+  pulses: 'The pulsed tone was',
+  chords: 'The piano chords were',
+  sample: 'The vocals were',
+}
+
+export const subjectOf = (sound: PanSound) => SUBJECTS[sound.kind]
+
+export type Target = { readonly pan: number; readonly sound: PanSound }
+
+export const randomTarget = (): Target => ({ pan: PAN_MIN + Math.floor(Math.random() * (PAN_MAX - PAN_MIN + 1)), sound: randomSound() })
 
 export const bounds = (level: Level, center: number) => ({ low: center - halfWidthOf(level), high: center + halfWidthOf(level) })

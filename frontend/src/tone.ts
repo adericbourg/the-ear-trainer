@@ -70,15 +70,19 @@ function pinkNoise(audio: AudioContext) {
   return buffer
 }
 
-// StereoPannerNode applies an equal-power law, so loudness is not a cue to the position.
-export function startNoise(pan: number) {
-  stopTone()
-  context ??= new AudioContext()
-  const source = new AudioBufferSourceNode(context, { buffer: (noise ??= pinkNoise(context)), loop: true })
-  const gain = fadingIn(context, NOISE_GAIN)
-  source.connect(gain).connect(new StereoPannerNode(context, { pan: pan / 100 })).connect(context.destination)
-  source.start()
-  playing = { source, gain }
+const PULSE_SECONDS = 0.25
+
+// A sine burst then as much silence, to loop. The burst fades in and out to avoid clicks.
+function pulses(audio: AudioContext, frequency: number) {
+  const { sampleRate } = audio
+  const buffer = new AudioBuffer({ length: Math.round(2 * PULSE_SECONDS * sampleRate), sampleRate })
+  const data = buffer.getChannelData(0)
+  const pulseLength = Math.round(PULSE_SECONDS * sampleRate)
+  const fadeLength = FADE_SECONDS * sampleRate
+  for (let i = 0; i < pulseLength; i++) {
+    data[i] = Math.sin((2 * Math.PI * frequency * i) / sampleRate) * Math.min(1, i / fadeLength, (pulseLength - i) / fadeLength)
+  }
+  return buffer
 }
 
 const NOTE_GAIN = 0.4
@@ -89,14 +93,14 @@ const MELODIC_DELAY_SECONDS = 0.8
 // Piano-like timbre: the fundamental plus 6 harmonics of decreasing amplitude.
 const HARMONICS = [0, 1, 0.5, 0.3, 0.2, 0.12, 0.08, 0.05]
 
-let wave: PeriodicWave | undefined
 let notes: { oscillator: OscillatorNode; gain: GainNode }[] = []
 
-function playNote(audio: AudioContext, frequency: number, start: number, peak: number) {
-  const periodicWave = (wave ??= new PeriodicWave(audio, { real: new Float32Array(HARMONICS.length), imag: new Float32Array(HARMONICS) }))
+function playNote(audio: BaseAudioContext, output: AudioNode, frequency: number, start: number, peak: number) {
+  // A PeriodicWave belongs to its context: notes are also rendered offline.
+  const periodicWave = new PeriodicWave(audio, { real: new Float32Array(HARMONICS.length), imag: new Float32Array(HARMONICS) })
   const oscillator = new OscillatorNode(audio, { frequency, periodicWave })
   const gain = new GainNode(audio, { gain: 0 })
-  oscillator.connect(gain).connect(audio.destination)
+  oscillator.connect(gain).connect(output)
   gain.gain.setValueAtTime(0, start)
   gain.gain.linearRampToValueAtTime(peak, start + NOTE_ATTACK_SECONDS)
   // Exponential ramps can't reach 0: decay to an inaudible level instead.
@@ -111,7 +115,7 @@ export function playInterval(frequencies: readonly number[], isHarmonic: boolean
   stopInterval()
   const audio = (context ??= new AudioContext())
   const peak = isHarmonic ? NOTE_GAIN / 2 : NOTE_GAIN
-  notes = frequencies.map((frequency, i) => playNote(audio, frequency, audio.currentTime + (isHarmonic ? 0 : i * MELODIC_DELAY_SECONDS), peak))
+  notes = frequencies.map((frequency, i) => playNote(audio, audio.destination, frequency, audio.currentTime + (isHarmonic ? 0 : i * MELODIC_DELAY_SECONDS), peak))
 }
 
 const CHORD_SECONDS = 1
@@ -123,14 +127,23 @@ const CHORD_NOTE_GAIN = NOTE_GAIN / 4
 export function playChords(cue: readonly number[], chords: readonly (readonly number[])[]) {
   stopInterval()
   const audio = (context ??= new AudioContext())
-  const cueNotes = cue.map((frequency, i) => playNote(audio, frequency, audio.currentTime + i * ARPEGGIO_SECONDS, CHORD_NOTE_GAIN))
+  const cueNotes = cue.map((frequency, i) => playNote(audio, audio.destination, frequency, audio.currentTime + i * ARPEGGIO_SECONDS, CHORD_NOTE_GAIN))
   const start = audio.currentTime + (cue.length - 1) * ARPEGGIO_SECONDS + 2 * CHORD_SECONDS
   notes = [
     ...cueNotes,
     ...chords.flatMap((frequencies, i) =>
-      frequencies.map((frequency) => playNote(audio, frequency, start + i * CHORD_SECONDS, CHORD_NOTE_GAIN)),
+      frequencies.map((frequency) => playNote(audio, audio.destination, frequency, start + i * CHORD_SECONDS, CHORD_NOTE_GAIN)),
     ),
   ]
+}
+
+// The chords one after the other, in mono, with one more beat for the last one to ring before the loop restarts.
+function renderChords(audio: AudioContext, chords: readonly (readonly number[])[]) {
+  const offline = new OfflineAudioContext({ length: Math.round((chords.length + 1) * CHORD_SECONDS * audio.sampleRate), sampleRate: audio.sampleRate })
+  chords.forEach((frequencies, i) => {
+    for (const frequency of frequencies) playNote(offline, offline.destination, frequency, i * CHORD_SECONDS, CHORD_NOTE_GAIN)
+  })
+  return offline.startRendering()
 }
 
 export function stopInterval() {
@@ -164,11 +177,7 @@ const FEEDBACK_GAIN_MAX = 0.8
 const feedbackGainOf = (eq: Eq, frequency: number) =>
   Math.min(FEEDBACK_GAIN_MAX, gainFor(frequency) * FEEDBACK_GAIN_RATIO * feedbackLevel(eq, frequency))
 
-export async function startMix(url: string, feedbackFrequencies: readonly number[], eq: Eq) {
-  stopMix()
-  mixEq = eq
-  const request = mixRequest
-  const audio = (context ??= new AudioContext())
+function loadSample(audio: AudioContext, url: string) {
   let sample = samples.get(url)
   if (!sample) {
     sample = fetch(url)
@@ -178,7 +187,15 @@ export async function startMix(url: string, feedbackFrequencies: readonly number
     // A failed load is retried on the next start.
     sample.catch(() => samples.delete(url))
   }
-  const buffer = await sample
+  return sample
+}
+
+export async function startMix(url: string, feedbackFrequencies: readonly number[], eq: Eq) {
+  stopMix()
+  mixEq = eq
+  const request = mixRequest
+  const audio = (context ??= new AudioContext())
+  const buffer = await loadSample(audio, url)
   if (request !== mixRequest) return
   // The EQ may have moved while the sample was loading.
   const latestEq = mixEq ?? eq
@@ -218,7 +235,49 @@ export function stopMix() {
   mix = undefined
 }
 
+// Mono sounds, to be panned.
+export type PanSound =
+  | { readonly kind: 'noise' }
+  | { readonly kind: 'tone'; readonly frequency: number }
+  | { readonly kind: 'pulses'; readonly frequency: number }
+  | { readonly kind: 'chords'; readonly chords: readonly (readonly number[])[] }
+  | { readonly kind: 'sample'; readonly url: string }
+
+async function sourceOf(audio: AudioContext, sound: PanSound): Promise<{ source: AudioScheduledSourceNode; gain: number }> {
+  const looping = (buffer: AudioBuffer) => new AudioBufferSourceNode(audio, { buffer, loop: true })
+  switch (sound.kind) {
+    case 'noise':
+      return { source: looping((noise ??= pinkNoise(audio))), gain: NOISE_GAIN }
+    case 'tone':
+      return { source: new OscillatorNode(audio, { frequency: sound.frequency }), gain: gainFor(sound.frequency) }
+    case 'pulses':
+      return { source: looping(pulses(audio, sound.frequency)), gain: gainFor(sound.frequency) }
+    case 'chords':
+      // The note gains are rendered in.
+      return { source: looping(await renderChords(audio, sound.chords)), gain: 1 }
+    case 'sample':
+      return { source: looping(await loadSample(audio, sound.url)), gain: SAMPLE_GAIN }
+  }
+}
+
+// Bumped by every stop: a sound that finishes loading or rendering after it is not played.
+let pannedRequest = 0
+
+// StereoPannerNode applies an equal-power law, so loudness is not a cue to the position.
+export async function startPanned(sound: PanSound, pan: number) {
+  stopTone()
+  const request = pannedRequest
+  const audio = (context ??= new AudioContext())
+  const { source, gain: level } = await sourceOf(audio, sound)
+  if (request !== pannedRequest) return
+  const gain = fadingIn(audio, level)
+  source.connect(gain).connect(new StereoPannerNode(audio, { pan: pan / 100 })).connect(audio.destination)
+  source.start()
+  playing = { source, gain }
+}
+
 export function stopTone() {
+  pannedRequest++
   if (!context || !playing) return
   fadeOut(context, playing.gain, [playing.source])
   playing = undefined

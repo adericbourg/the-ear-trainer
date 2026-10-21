@@ -1,7 +1,19 @@
-import { ARROW_STEP, bounds, centerMaxOf, centerMinOf, formatPan, INITIAL_CENTER, PAGE_STEP, randomTarget, toPan, toPosition } from './pan'
+import {
+  ARROW_STEP,
+  bounds,
+  centerMaxOf,
+  centerMinOf,
+  formatPan,
+  INITIAL_CENTER,
+  PAGE_STEP,
+  randomTarget,
+  subjectOf,
+  toPan,
+  toPosition,
+} from './pan'
 import RangeExercise from '../../RangeExercise'
 import type { ExerciseProps } from '../../Series'
-import { startNoise } from '../../../tone'
+import { startPanned } from '../../../tone'
 
 export default function Panning(props: ExerciseProps) {
   const { level } = props
@@ -21,9 +33,9 @@ export default function Panning(props: ExerciseProps) {
       }
       sliderLabel="Pan guess"
       endLabels={['L', 'C', 'R']}
-      start={startNoise}
+      start={({ pan, sound }) => startPanned(sound, pan).catch(console.error)}
       randomTarget={randomTarget}
-      valueOf={(pan) => pan}
+      valueOf={({ pan }) => pan}
       initialCenter={INITIAL_CENTER}
       centerMin={centerMinOf(level)}
       centerMax={centerMaxOf(level)}
@@ -40,7 +52,7 @@ export default function Panning(props: ExerciseProps) {
       })}
       format={formatPan}
       valueText={({ low, high }) => `${formatPan(low)} to ${formatPan(high)}`}
-      feedbackOf={(target) => `The sound was panned ${formatPan(target)}.`}
+      feedbackOf={({ pan, sound }) => `${subjectOf(sound)} panned ${formatPan(pan)}.`}
     />
   )
 }

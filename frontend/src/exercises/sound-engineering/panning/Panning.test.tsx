@@ -2,11 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Level } from '../../pitch/intervals/interval'
 import Panning from './Panning'
-import { startNoise, stopTone } from '../../../tone'
+import { startPanned, stopTone } from '../../../tone'
 
-vi.mock('../../../tone', () => ({ startNoise: vi.fn(), stopTone: vi.fn() }))
+vi.mock('../../../tone', () => ({ startPanned: vi.fn(() => Promise.resolve()), stopTone: vi.fn() }))
 
-// Math.random() = 0.5 draws C (0), inside the initial Beginner selector (L25-R25); 0 draws L100, outside.
+// Math.random() = 0.5 draws C (0), inside the initial Beginner selector (L25-R25), with pulses at A4; 0 draws L100, outside, with pink noise.
+const PULSES = { kind: 'pulses', frequency: 440 }
+const NOISE = { kind: 'noise' }
 function renderExercise(random = 0.5, level: Level = 'beginner', isLastQuestion = false, isAutoPlay = false) {
   vi.spyOn(Math, 'random').mockReturnValue(random)
   const onCheck = vi.fn()
@@ -23,7 +25,7 @@ function renderExercise(random = 0.5, level: Level = 'beginner', isLastQuestion 
 
 describe('Panning', () => {
   beforeEach(() => {
-    vi.mocked(startNoise).mockClear()
+    vi.mocked(startPanned).mockClear()
     vi.mocked(stopTone).mockClear()
   })
 
@@ -45,7 +47,7 @@ describe('Panning', () => {
     fireEvent.click(play())
 
     // Then the target plays and Check is enabled
-    expect(startNoise).toHaveBeenCalledWith(0)
+    expect(startPanned).toHaveBeenCalledWith(PULSES, 0)
     expect(play()).toHaveAccessibleName('Pause')
     expect(check()).toBeEnabled()
 
@@ -56,6 +58,13 @@ describe('Panning', () => {
     expect(stopTone).toHaveBeenCalled()
     expect(play()).toHaveAccessibleName('Play')
     expect(check()).toBeEnabled()
+
+    // When clicking Play again
+    fireEvent.click(play())
+
+    // Then the same sound plays again
+    expect(startPanned).toHaveBeenCalledTimes(2)
+    expect(startPanned).toHaveBeenLastCalledWith(PULSES, 0)
   })
 
   it('space_togglesPlaybackOnlyOutsideButtons', () => {
@@ -124,7 +133,7 @@ describe('Panning', () => {
     const next = screen.getByRole('button', { name: 'Next' })
     expect(next).toHaveFocus()
     expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument()
-    expect(screen.getByText('You guessed right! The sound was panned C.')).toBeInTheDocument()
+    expect(screen.getByText('You guessed right! The pulsed tone was panned C.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(selector).toHaveAttribute('aria-disabled', 'true')
     expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'C', isHit: true })
@@ -156,15 +165,16 @@ describe('Panning', () => {
 
     // Then the result is a miss, with a marker
     expect(onCheck).toHaveBeenCalledExactlyOnceWith({ label: 'L100', isHit: false })
-    expect(screen.getByText('Missed! The sound was panned L100.')).toBeInTheDocument()
+    expect(screen.getByText('Missed! The pink noise was panned L100.')).toBeInTheDocument()
     expect(screen.getByTestId('target-marker')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toHaveFocus()
   })
 
   it('next_startsANewRound', () => {
-    // Given a checked miss, with playback running and the selector moved before check
+    // Given a checked miss on pink noise, with playback running and the selector moved before check
     const { selector, play, onNext } = renderExercise(0)
     fireEvent.click(play())
+    expect(startPanned).toHaveBeenLastCalledWith(NOISE, -100)
     fireEvent.keyDown(selector, { key: 'End' })
     fireEvent.click(screen.getByRole('button', { name: 'Check' }))
     vi.mocked(Math.random).mockReturnValue(0.5)
@@ -184,17 +194,17 @@ describe('Panning', () => {
     expect(selector).not.toHaveAttribute('aria-disabled', 'true')
     expect(selector).toHaveFocus()
 
-    // And the new target is played next
+    // And the new target, with a new sound, is played next
     fireEvent.click(play())
-    expect(startNoise).toHaveBeenLastCalledWith(0)
+    expect(startPanned).toHaveBeenLastCalledWith(PULSES, 0)
   })
 
   it('autoPlay_playsEachNewQuestion', () => {
     // Given / When an auto-play exercise
     const { play, check } = renderExercise(0.5, 'beginner', false, true)
 
-    // Then the noise plays without clicking Play
-    expect(startNoise).toHaveBeenCalledExactlyOnceWith(0)
+    // Then the sound plays without clicking Play
+    expect(startPanned).toHaveBeenCalledExactlyOnceWith(PULSES, 0)
     expect(play()).toHaveAccessibleName('Pause')
     expect(check()).toBeEnabled()
 
@@ -202,8 +212,8 @@ describe('Panning', () => {
     fireEvent.click(check())
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
-    // Then the new noise plays too
-    expect(startNoise).toHaveBeenCalledTimes(2)
+    // Then the new sound plays too
+    expect(startPanned).toHaveBeenCalledTimes(2)
     expect(play()).toHaveAccessibleName('Pause')
   })
 
