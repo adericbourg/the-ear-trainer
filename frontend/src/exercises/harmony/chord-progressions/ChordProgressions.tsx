@@ -17,7 +17,7 @@ export default function ChordProgressions(props: ExerciseProps) {
         </>
       }
       groupLabel="Progression"
-      play={(question) => playChords(question.chords.map((chord) => chord.map(toFrequency)))}
+      play={({ cue, chords }) => playChords(cue.map(toFrequency), chords.map((chord) => chord.map(toFrequency)))}
       // The choices are drawn with the question, so they don't change on re-render.
       randomQuestion={() => {
         const question = randomQuestion(level)

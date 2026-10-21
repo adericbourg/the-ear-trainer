@@ -114,16 +114,22 @@ export function playInterval(frequencies: readonly number[], isHarmonic: boolean
 }
 
 const CHORD_SECONDS = 1
+const ARPEGGIO_SECONDS = 0.3
 // 4-note chords: a quarter of the melodic gain per note.
 const CHORD_NOTE_GAIN = NOTE_GAIN / 4
 
-// One chord after the other; an empty chord is a rest.
-export function playChords(chords: readonly (readonly number[])[]) {
+// The cue is arpeggiated, then the chords follow one after the other after a beat of silence.
+export function playChords(cue: readonly number[], chords: readonly (readonly number[])[]) {
   stopInterval()
   const audio = (context ??= new AudioContext())
-  notes = chords.flatMap((frequencies, i) =>
-    frequencies.map((frequency) => playNote(audio, frequency, audio.currentTime + i * CHORD_SECONDS, CHORD_NOTE_GAIN)),
-  )
+  const cueNotes = cue.map((frequency, i) => playNote(audio, frequency, audio.currentTime + i * ARPEGGIO_SECONDS, CHORD_NOTE_GAIN))
+  const start = audio.currentTime + (cue.length - 1) * ARPEGGIO_SECONDS + 2 * CHORD_SECONDS
+  notes = [
+    ...cueNotes,
+    ...chords.flatMap((frequencies, i) =>
+      frequencies.map((frequency) => playNote(audio, frequency, start + i * CHORD_SECONDS, CHORD_NOTE_GAIN)),
+    ),
+  ]
 }
 
 export function stopInterval() {

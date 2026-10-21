@@ -115,12 +115,17 @@ function upperVoices(root: number, triad: readonly number[], previous: readonly 
   return candidates.reduce((best, c) => (distance(c, previous) < distance(best, previous) ? c : best))
 }
 
-// The tonic chord (easy levels) or the tonic note sets the key; a rest separates it from the progression.
+// The tonic chord (easy levels) or the tonic note sets the key.
 const isChordCue = (level: Level) => level === 'beginner' || level === 'intermediate'
 
-export type Question = { readonly progression: Progression; readonly key: string; readonly chords: readonly (readonly number[])[] }
+export type Question = {
+  readonly progression: Progression
+  readonly key: string
+  readonly cue: readonly number[]
+  readonly chords: readonly (readonly number[])[]
+}
 
-// Chords are MIDI numbers, bass first; an empty chord is a rest. The tonic is a pitch class (0 = C).
+// Notes are MIDI numbers, bass first. The tonic is a pitch class (0 = C).
 export function questionOf(level: Level, progression: Progression, tonic: number): Question {
   const degrees = degreesOf(progression).map((d) => d!)
   const isMinor = degrees.includes(DEGREES.i!)
@@ -133,7 +138,7 @@ export function questionOf(level: Level, progression: Progression, tonic: number
   }
   const cue = isChordCue(level) ? chordOf(tonicDegree) : [CUE_NOTE_LOWEST + mod(tonic - CUE_NOTE_LOWEST, 12)]
   const key = `${(isMinor ? MINOR_KEYS : MAJOR_KEYS)[tonic]} ${isMinor ? 'minor' : 'major'}`
-  return { progression, key, chords: [cue, [], ...degrees.map(chordOf)] }
+  return { progression, key, cue, chords: degrees.map(chordOf) }
 }
 
 export const randomQuestion = (level: Level) => questionOf(level, randomItem(progressionsOf(level)), Math.floor(Math.random() * 12))

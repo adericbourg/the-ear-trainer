@@ -33,9 +33,9 @@ describe('ChordProgressions', () => {
     const { play, progression, onCheck } = renderExercise(0.5)
     fireEvent.click(play())
 
-    // Then the tonic, a rest and the progression play
-    const expected = questionOf('beginner', progressionsOf('beginner')[2]!, 6)
-    expect(playChords).toHaveBeenCalledWith(expected.chords.map((chord) => chord.map(toFrequency)))
+    // Then the tonic, then the progression play
+    const { cue, chords } = questionOf('beginner', progressionsOf('beginner')[2]!, 6)
+    expect(playChords).toHaveBeenCalledWith(cue.map(toFrequency), chords.map((chord) => chord.map(toFrequency)))
 
     // When clicking the right progression
     fireEvent.click(progression('IV I'))
