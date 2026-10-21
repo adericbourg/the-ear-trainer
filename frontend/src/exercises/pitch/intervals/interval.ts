@@ -1,3 +1,5 @@
+import { playInterval } from '../../../tone'
+
 export type Level = 'beginner' | 'intermediate' | 'advanced' | 'expert'
 export const LEVELS: readonly { level: Level; name: string }[] = [
   { level: 'beginner', name: 'Beginner' },
@@ -73,3 +75,7 @@ export function randomQuestion(level: Level, maybePrevious?: number): Question {
 }
 
 export const toFrequency = (midi: number) => 440 * 2 ** ((midi - 69) / 12)
+
+// Plays a question's notes, melodic or harmonic depending on the level.
+export const playNotes = (level: Level) => (question: { readonly notes: readonly number[] }) =>
+  playInterval(question.notes.map(toFrequency), isHarmonic(level))

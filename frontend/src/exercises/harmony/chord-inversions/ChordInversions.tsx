@@ -1,5 +1,6 @@
 import { inversionsOf, randomQuestion, recapLabel, solutionOf } from './inversion'
 import { INVERSION_NAMES } from '../chord-types/chord'
+import { playNotes } from '../../pitch/intervals/interval'
 import ChoiceExercise from '../../ChoiceExercise'
 import type { ExerciseProps } from '../../Series'
 
@@ -16,6 +17,7 @@ export default function ChordInversions(props: ExerciseProps) {
         </>
       }
       groupLabel="Inversion"
+      play={playNotes(level)}
       randomQuestion={() => randomQuestion(level)}
       choicesOf={() => inversionsOf(level)}
       nameOf={(label) => label}

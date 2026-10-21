@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { isExpert, randomQuestion, simpleOf, stopName, stopsOf, targetName, type Question } from './interval'
+import { isExpert, playNotes, randomQuestion, simpleOf, stopName, stopsOf, targetName, type Question } from './interval'
 import ChoiceExercise from '../../ChoiceExercise'
 import type { ExerciseProps } from '../../Series'
 import shared from '../../exercise.module.css'
@@ -28,6 +28,7 @@ export default function Intervals(props: ExerciseProps) {
         </>
       }
       groupLabel="Interval"
+      play={playNotes(level)}
       randomQuestion={(previous?: Question) => randomQuestion(level, previous?.semitones)}
       choicesOf={() => stopsOf(level)}
       nameOf={stopName}

@@ -1,4 +1,5 @@
 import { choicesOf, randomQuestion, targetLabel } from './chord'
+import { playNotes } from '../../pitch/intervals/interval'
 import ChoiceExercise from '../../ChoiceExercise'
 import type { ExerciseProps } from '../../Series'
 
@@ -15,6 +16,7 @@ export default function ChordTypes(props: ExerciseProps) {
         </>
       }
       groupLabel="Chord type"
+      play={playNotes(level)}
       // The choices are drawn with the question, so they don't change on re-render.
       randomQuestion={() => {
         const question = randomQuestion(level)

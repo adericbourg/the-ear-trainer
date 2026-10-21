@@ -1,15 +1,15 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
-import { isHarmonic, toFrequency } from './pitch/intervals/interval'
 import { answerIndexOf, ANSWER_KEYS } from './answerKeys'
 import type { ExerciseProps } from './Series'
 import shared from './exercise.module.css'
 import { useDocumentKeyDown } from './useDocumentKeyDown'
-import { playInterval, stopInterval } from '../tone'
+import { stopInterval } from '../tone'
 
 type Props<Q, C> = ExerciseProps & {
   readonly instructions: ReactNode
   readonly groupLabel: string
+  readonly play: (question: Q) => void
   readonly randomQuestion: (previous?: Q) => Q
   readonly choicesOf: (question: Q) => readonly C[]
   readonly nameOf: (choice: C) => string
@@ -25,15 +25,15 @@ type Props<Q, C> = ExerciseProps & {
   readonly onReset?: () => void
 }
 
-// An exercise where a played question (notes are MIDI numbers) is answered by picking one of a few buttons.
-export default function ChoiceExercise<Q extends { readonly notes: readonly number[] }, C>({
-  level,
+// An exercise where a played question is answered by picking one of a few buttons.
+export default function ChoiceExercise<Q, C>({
   isLastQuestion,
   isAutoPlay,
   onCheck,
   onNext,
   instructions,
   groupLabel,
+  play: playQuestion,
   randomQuestion,
   choicesOf,
   nameOf,
@@ -53,7 +53,6 @@ export default function ChoiceExercise<Q extends { readonly notes: readonly numb
 
   const isChecked = picked !== undefined
   const choices = choicesOf(question)
-  const playQuestion = (played: Q) => playInterval(played.notes.map(toFrequency), isHarmonic(level))
 
   const play = () => {
     playQuestion(question)
