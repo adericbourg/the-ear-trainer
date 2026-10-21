@@ -1,4 +1,4 @@
-import { HIGHEST_NOTE, isExpert, LEVELS, lowestNote, randomItem, type Level } from '../intervals/interval'
+import { HIGHEST_NOTE, isExpert, LEVELS, lowestNote, randomItem, type Level } from '../../pitch/intervals/interval'
 
 export type Triad = 'major' | 'minor' | 'diminished' | 'augmented' | 'sus2' | 'sus4'
 export type Extension = 'none' | '7' | 'maj7' | 'add9'

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
-import ChordInversions from './exercises/pitch/chord-inversions/ChordInversions'
-import ChordTypes from './exercises/pitch/chord-types/ChordTypes'
+import ChordInversions from './exercises/harmony/chord-inversions/ChordInversions'
+import ChordTypes from './exercises/harmony/chord-types/ChordTypes'
 import Intervals from './exercises/pitch/intervals/Intervals'
 import FeedbackSuppression from './exercises/sound-engineering/feedback-suppression/FeedbackSuppression'
 import FrequencyIdentification from './exercises/sound-engineering/frequency-identification/FrequencyIdentification'
@@ -24,6 +24,7 @@ export type Exercise = {
 
 export const categories: readonly Category[] = [
   { id: CategoryId('pitch'), name: 'Pitch' },
+  { id: CategoryId('harmony'), name: 'Harmony' },
   { id: CategoryId('sound-engineering'), name: 'Sound engineering' },
 ]
 export const exercises: readonly (Exercise & { readonly component: ComponentType<ExerciseProps> })[] = [
@@ -38,14 +39,14 @@ export const exercises: readonly (Exercise & { readonly component: ComponentType
     id: ExerciseId('chord-types'),
     name: 'Chord types',
     description: "Recognize a chord's type: major, minor, seventh chords and more.",
-    categoryId: CategoryId('pitch'),
+    categoryId: CategoryId('harmony'),
     component: ChordTypes,
   },
   {
     id: ExerciseId('chord-inversions'),
     name: 'Chord inversions',
     description: 'Recognize which note of a chord is in the bass.',
-    categoryId: CategoryId('pitch'),
+    categoryId: CategoryId('harmony'),
     component: ChordInversions,
   },
   {

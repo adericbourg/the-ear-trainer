@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ChordTypes from './ChordTypes'
-import { toFrequency, type Level } from '../intervals/interval'
+import { toFrequency, type Level } from '../../pitch/intervals/interval'
 import { playInterval, stopInterval } from '../../../tone'
 
 vi.mock('../../../tone', () => ({ playInterval: vi.fn(), stopInterval: vi.fn() }))

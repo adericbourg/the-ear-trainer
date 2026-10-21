@@ -1,4 +1,4 @@
-import { randomItem, type Level } from '../intervals/interval'
+import { randomItem, type Level } from '../../pitch/intervals/interval'
 import { chordsOf, INVERSION_NAMES, inversionCountOf, isRootPositionOnly, questionOf, type Chord, type Question } from '../chord-types/chord'
 
 const BASSES = ['root', '3rd', '5th', '7th']
