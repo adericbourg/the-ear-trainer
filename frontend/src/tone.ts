@@ -91,7 +91,7 @@ const HARMONICS = [0, 1, 0.5, 0.3, 0.2, 0.12, 0.08, 0.05]
 let wave: PeriodicWave | undefined
 let notes: { oscillator: OscillatorNode; gain: GainNode }[] = []
 
-function playNote(audio: AudioContext, frequency: number, start: number, peak: number) {
+function playNote(audio: AudioContext, frequency: number, start: number, peak: number, decaySeconds = NOTE_DECAY_SECONDS) {
   const periodicWave = (wave ??= new PeriodicWave(audio, { real: new Float32Array(HARMONICS.length), imag: new Float32Array(HARMONICS) }))
   const oscillator = new OscillatorNode(audio, { frequency, periodicWave })
   const gain = new GainNode(audio, { gain: 0 })
@@ -99,9 +99,9 @@ function playNote(audio: AudioContext, frequency: number, start: number, peak: n
   gain.gain.setValueAtTime(0, start)
   gain.gain.linearRampToValueAtTime(peak, start + NOTE_ATTACK_SECONDS)
   // Exponential ramps can't reach 0: decay to an inaudible level instead.
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + NOTE_DECAY_SECONDS)
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + decaySeconds)
   oscillator.start(start)
-  oscillator.stop(start + NOTE_DECAY_SECONDS)
+  oscillator.stop(start + decaySeconds)
   return { oscillator, gain }
 }
 
@@ -114,6 +114,8 @@ export function playInterval(frequencies: readonly number[], isHarmonic: boolean
 }
 
 const CHORD_SECONDS = 1
+// Chords ring into the next one instead of stopping dry.
+const CHORD_DECAY_SECONDS = 3
 const ARPEGGIO_SECONDS = 0.3
 // 4-note chords: a quarter of the melodic gain per note.
 const CHORD_NOTE_GAIN = NOTE_GAIN / 4
@@ -122,12 +124,12 @@ const CHORD_NOTE_GAIN = NOTE_GAIN / 4
 export function playChords(cue: readonly number[], chords: readonly (readonly number[])[]) {
   stopInterval()
   const audio = (context ??= new AudioContext())
-  const cueNotes = cue.map((frequency, i) => playNote(audio, frequency, audio.currentTime + i * ARPEGGIO_SECONDS, CHORD_NOTE_GAIN))
+  const cueNotes = cue.map((frequency, i) => playNote(audio, frequency, audio.currentTime + i * ARPEGGIO_SECONDS, CHORD_NOTE_GAIN, CHORD_DECAY_SECONDS))
   const start = audio.currentTime + (cue.length - 1) * ARPEGGIO_SECONDS + 2 * CHORD_SECONDS
   notes = [
     ...cueNotes,
     ...chords.flatMap((frequencies, i) =>
-      frequencies.map((frequency) => playNote(audio, frequency, start + i * CHORD_SECONDS, CHORD_NOTE_GAIN)),
+      frequencies.map((frequency) => playNote(audio, frequency, start + i * CHORD_SECONDS, CHORD_NOTE_GAIN, CHORD_DECAY_SECONDS)),
     ),
   ]
 }
