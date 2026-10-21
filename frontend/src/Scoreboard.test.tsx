@@ -10,6 +10,18 @@ const scores: DailyScore[] = [
   { date: '2026-10-21', exerciseId: ExerciseId('chord-types'), level: 'beginner', bestHits: 10, seriesCount: 1 },
 ]
 
+// jsdom has no modal dialog support.
+HTMLDialogElement.prototype.showModal = function () {
+  this.open = true
+}
+HTMLDialogElement.prototype.close = function () {
+  this.open = false
+  this.dispatchEvent(new Event('close'))
+}
+
+const importFile = (content: string) =>
+  fireEvent.change(screen.getByLabelText('Import scores file'), { target: { files: [new File([content], 'x.json')] } })
+
 describe('Scoreboard', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -88,24 +100,55 @@ describe('Scoreboard', () => {
     expect(JSON.parse(decodeURIComponent(link.getAttribute('href')!.split(',')[1]!))).toEqual(scores)
   })
 
-  it('importInput_replacesTheScoresOrRejectsInvalidFiles', async () => {
-    // Given no scores, and confirmations accepted
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('importInput_withoutCurrentScores_importsDirectlyOrRejectsInvalidFiles', async () => {
+    // Given no scores
     render(<Scoreboard />)
-    const input = screen.getByLabelText('Import scores file')
 
     // When importing an invalid file
-    fireEvent.change(input, { target: { files: [new File(['not json'], 'x.json')] } })
+    importFile('not json')
 
     // Then it is rejected
     expect(await screen.findByRole('alert')).toHaveTextContent("This file isn't a scores export.")
 
     // When importing an export
-    fireEvent.change(input, { target: { files: [new File([JSON.stringify(scores)], 'x.json')] } })
+    importFile(JSON.stringify(scores))
 
-    // Then the scores are replaced
+    // Then the scores are imported without asking
     expect(await screen.findByText('Most practiced this month')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Import scores' })).not.toBeInTheDocument()
     expect(loadScores()).toEqual(scores)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('importInput_withCurrentScores_asksToMergeOrReplace', async () => {
+    // Given a score of today
+    const current = { date: '2026-10-21', exerciseId: ExerciseId('panning'), level: 'expert', bestHits: 6, seriesCount: 1 } as const
+    saveScores([current])
+    render(<Scoreboard />)
+
+    // When importing an export, then cancelling
+    importFile(JSON.stringify(scores))
+    const dialog = await screen.findByRole('dialog', { name: 'Import scores' })
+    expect(dialog).toHaveTextContent('This file has scores from 2 days. You already have scores from 1 day.')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    // Then nothing changes
+    expect(screen.queryByRole('dialog', { name: 'Import scores' })).not.toBeInTheDocument()
+    expect(loadScores()).toEqual([current])
+
+    // When importing it again and merging
+    importFile(JSON.stringify(scores))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Import scores' })).getByRole('button', { name: 'Merge' }))
+
+    // Then both are kept
+    expect(loadScores()).toEqual([current, ...scores])
+    expect(screen.getByText('Most practiced this month').nextElementSibling).toHaveTextContent('Intervals (4 series)')
+
+    // When importing it again and replacing
+    importFile(JSON.stringify(scores))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Import scores' })).getByRole('button', { name: 'Replace' }))
+
+    // Then only the imported scores are left
+    expect(loadScores()).toEqual(scores)
   })
 })

@@ -24,14 +24,32 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const localDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
-export function recordSeries(scores: readonly DailyScore[], { date, exerciseId, level, hits }: CompletedSeries) {
-  const isSame = (s: DailyScore) => s.date === date && s.exerciseId === exerciseId && s.level === level
-  const existing = scores.find(isSame)
-  if (!existing) return [...scores, { date, exerciseId, level, bestHits: hits, seriesCount: 1 }]
-  return scores.map((s) =>
-    isSame(s) ? { ...s, bestHits: Math.max(s.bestHits, hits), seriesCount: s.seriesCount + 1 } : s,
-  )
+// Adds entry, or combines it with the existing one of the same day, exercise and level.
+function upsert(scores: readonly DailyScore[], entry: DailyScore, combine: (existing: DailyScore) => DailyScore) {
+  const isSame = (s: DailyScore) => s.date === entry.date && s.exerciseId === entry.exerciseId && s.level === entry.level
+  if (!scores.some(isSame)) return [...scores, entry]
+  return scores.map((s) => (isSame(s) ? combine(s) : s))
 }
+
+export const recordSeries = (scores: readonly DailyScore[], { date, exerciseId, level, hits }: CompletedSeries) =>
+  upsert(scores, { date, exerciseId, level, bestHits: hits, seriesCount: 1 }, (s) => ({
+    ...s,
+    bestHits: Math.max(s.bestHits, hits),
+    seriesCount: s.seriesCount + 1,
+  }))
+
+// Max of both counts, so importing the same file twice changes nothing.
+// ponytail: undercounts when two devices practiced the same exercise and level on the same day; exact merge needs per-series ids.
+export const mergeScores = (current: readonly DailyScore[], imported: readonly DailyScore[]) =>
+  imported.reduce(
+    (all, entry) =>
+      upsert(all, entry, (s) => ({
+        ...s,
+        bestHits: Math.max(s.bestHits, entry.bestHits),
+        seriesCount: Math.max(s.seriesCount, entry.seriesCount),
+      })),
+    current,
+  )
 
 const isCount = (value: unknown, min: number, max: number) =>
   Number.isInteger(value) && (value as number) >= min && (value as number) <= max

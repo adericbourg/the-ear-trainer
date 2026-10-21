@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useId, useRef, useState, type ChangeEvent } from 'react'
 import { exercises } from './exercises'
 import { LEVELS } from './exercises/pitch/intervals/interval'
 import { SERIES_LENGTH } from './exercises/scoring'
@@ -8,6 +8,7 @@ import {
   isStorageAvailable,
   loadScores,
   localDate,
+  mergeScores,
   mostPracticed,
   parseScores,
   saveScores,
@@ -22,6 +23,7 @@ const levelName = (level: DailyScore['level']) => LEVELS.find((l) => l.level ===
 const exerciseIndex = (s: DailyScore) => exercises.findIndex((e) => e.id === s.exerciseId)
 const levelIndex = (s: DailyScore) => LEVELS.findIndex((l) => l.level === s.level)
 const days = (count: number) => `${count} ${count === 1 ? 'day' : 'days'}`
+const dayCount = (scores: readonly DailyScore[]) => new Set(scores.map((s) => s.date)).size
 const dayFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'full' })
 const formatDay = (date: string) => {
   const [year, month, day] = date.split('-').map(Number)
@@ -32,6 +34,9 @@ export default function Scoreboard() {
   const [scores, setScores] = useState(loadScores)
   const [importError, setImportError] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+  const [pendingImport, setPendingImport] = useState<readonly DailyScore[] | null>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const dialogTitleId = useId()
   const [isAvailable] = useState(isStorageAvailable)
 
   const [today] = useState(() => localDate(new Date()))
@@ -63,9 +68,18 @@ export default function Scoreboard() {
       return
     }
     setImportError(null)
-    if (!window.confirm('Replace your current scores with the ones from this file?')) return
-    saveScores(imported)
-    setScores(imported)
+    if (scores.length === 0) {
+      apply(imported)
+      return
+    }
+    setPendingImport(imported)
+    dialogRef.current?.showModal()
+  }
+
+  const apply = (newScores: readonly DailyScore[]) => {
+    saveScores(newScores)
+    setScores(newScores)
+    dialogRef.current?.close()
   }
 
   return (
@@ -98,6 +112,28 @@ export default function Scoreboard() {
         )}
       </div>
       {importError && <p role="alert">{importError}</p>}
+      <dialog ref={dialogRef} className={styles.dialog} aria-labelledby={dialogTitleId} onClose={() => setPendingImport(null)}>
+        {pendingImport && (
+          <>
+            <h2 id={dialogTitleId}>Import scores</h2>
+            <p>
+              This file has scores from {days(dayCount(pendingImport))}. You already have scores from{' '}
+              {days(dayCount(scores))}.
+            </p>
+            <div className={shared.result}>
+              <button type="button" className={shared.button} onClick={() => apply(mergeScores(scores, pendingImport))}>
+                Merge
+              </button>
+              <button type="button" className={shared.button} onClick={() => apply(pendingImport)}>
+                Replace
+              </button>
+              <button type="button" className={shared.button} onClick={() => dialogRef.current?.close()}>
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+      </dialog>
 
       {scores.length === 0 ? (
         <p>No scores yet. Complete a scored series to see it here.</p>

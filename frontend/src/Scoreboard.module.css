@@ -59,3 +59,17 @@
   border: 1px solid var(--content-fg);
   border-radius: 1rem;
 }
+
+.dialog {
+  max-width: min(32rem, calc(100% - 2rem));
+  padding: 1.5rem;
+  color: var(--content-fg);
+  background: var(--content-bg);
+  border: 2px solid var(--content-fg);
+  border-top: 4px solid var(--accent);
+  border-radius: 0.5rem;
+}
+
+.dialog h2 {
+  margin-top: 0;
+}

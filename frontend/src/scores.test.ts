@@ -5,6 +5,7 @@ import {
   highestMastered,
   loadScores,
   localDate,
+  mergeScores,
   mostPracticed,
   parseScores,
   recordSeries,
@@ -51,6 +52,23 @@ describe('scores', () => {
       score('2026-10-21', intervals, 'beginner', 10, 1),
     ])
     expect(first).toEqual([score('2026-10-21', intervals, 'advanced', 6, 1)])
+  })
+
+  it('mergeScores_keepsTheMaxOfBothAndIsIdempotent', () => {
+    // Given current and imported scores overlapping on one day, exercise and level
+    const current = [score('2026-10-20', intervals, 'advanced', 8, 1), score('2026-10-21', panning, 'expert', 6, 2)]
+    const imported = [score('2026-10-20', intervals, 'advanced', 7, 3), score('2026-10-19', panning, 'beginner', 9)]
+
+    // When merging them, then merging the import again
+    const merged = mergeScores(current, imported)
+
+    // Then overlapping entries keep the max of both, others are added, and a second merge changes nothing
+    expect(merged).toEqual([
+      score('2026-10-20', intervals, 'advanced', 8, 3),
+      score('2026-10-21', panning, 'expert', 6, 2),
+      score('2026-10-19', panning, 'beginner', 9),
+    ])
+    expect(mergeScores(merged, imported)).toEqual(merged)
   })
 
   it('parseScores_dropsInvalidEntries', () => {

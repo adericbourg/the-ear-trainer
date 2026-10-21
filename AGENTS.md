@@ -32,7 +32,7 @@ Durable conventions for this repository. Keep it up to date when a convention ch
 - Below 768px the categories collapse behind a "Menu" burger button.
 
 ## Scores
-- No backend, no data collected: scores live in `localStorage` (key `the-ear-trainer.scores`) and the scoreboard says so. Export/Import (JSON file, import replaces) is the only way to move them.
+- No backend, no data collected: scores live in `localStorage` (key `the-ear-trainer.scores`) and the scoreboard says so. Export/Import (JSON file) is the only way to move them: when scores exist, a dialog lets the user merge (max of best hits and of series count per day, exercise and level, so re-importing is harmless) or replace.
 - `Series` records a scored series once its last question is answered (free practice and series abandoned earlier are not recorded): one `DailyScore` per local day, exercise and level, keeping the best hits and the series count (`src/scores.ts`).
 - Stored and imported scores are external input: `parseScores` resolves ids and levels against the registry and drops invalid entries.
 - Mastered level: highest level with a `SERIES_LENGTH - 1` or better.
